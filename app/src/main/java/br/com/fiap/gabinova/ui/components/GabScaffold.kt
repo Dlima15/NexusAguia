@@ -50,9 +50,9 @@ sealed class GabNavItem(
     val route: String
 ) {
     data object Home        : GabNavItem("Home",        Icons.Filled.Home,      "home")
-    data object Estrategias : GabNavItem("Estratégias", Icons.Filled.TrendingUp,"estrategias")
-    data object Ideias      : GabNavItem("Ideias",      Icons.Filled.Lightbulb, "ideias")
-    data object Projetos    : GabNavItem("Projetos",    Icons.Filled.Work,      "projetos")
+    data object Estrategias : GabNavItem("Estratégias", Icons.Filled.TrendingUp,"guidelines")
+    data object Ideias      : GabNavItem("Ideias",      Icons.Filled.Lightbulb, "ideas")
+    data object Projetos    : GabNavItem("Projetos",    Icons.Filled.Work,      "projects")
     data object Dashboard   : GabNavItem("Dashboard",   Icons.Filled.BarChart,  "dashboard")
 }
 
