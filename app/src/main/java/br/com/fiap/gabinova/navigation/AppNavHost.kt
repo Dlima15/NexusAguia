@@ -24,6 +24,7 @@ import br.com.fiap.gabinova.ui.components.GabBottomBar
 import br.com.fiap.gabinova.ui.components.GabScaffold
 import br.com.fiap.gabinova.ui.components.GabTopBar
 import br.com.fiap.gabinova.ui.screens.LoginScreen
+import br.com.fiap.gabinova.ui.screens.SplashScreen
 import br.com.fiap.gabinova.ui.theme.GabBackground
 
 private val authenticatedRoutes = setOf(
@@ -89,6 +90,11 @@ fun AppNavHost(
                         navController.navigate(Routes.LOGIN) {
                             popUpTo(Routes.SPLASH) { inclusive = true }
                         }
+                    },
+                    onNavigateToHome = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.SPLASH) { inclusive = true }
+                        }
                     }
                 )
             }
@@ -115,18 +121,6 @@ fun AppNavHost(
 }
 
 // ── Placeholders — substituir por composables reais em ui.screens ─────────────
-
-@Composable
-internal fun SplashScreen(onNavigateToLogin: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(GabBackground),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "Splash", style = MaterialTheme.typography.headlineMedium)
-    }
-}
 
 @Composable
 internal fun HomeScreen() = PlaceholderScreen("Home")
