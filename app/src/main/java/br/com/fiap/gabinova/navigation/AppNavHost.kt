@@ -23,6 +23,7 @@ import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.GabBottomBar
 import br.com.fiap.gabinova.ui.components.GabScaffold
 import br.com.fiap.gabinova.ui.components.GabTopBar
+import br.com.fiap.gabinova.ui.screens.HomeScreen
 import br.com.fiap.gabinova.ui.screens.LoginScreen
 import br.com.fiap.gabinova.ui.screens.SplashScreen
 import br.com.fiap.gabinova.ui.theme.GabBackground
@@ -110,7 +111,15 @@ fun AppNavHost(
             }
 
             // ── Com GabScaffold ──────────────────────────────────────────
-            composable(Routes.HOME)         { HomeScreen() }
+            composable(Routes.HOME) {
+                HomeScreen(
+                    onNavigateToGuidelines   = { navController.navigate(Routes.GUIDELINES) },
+                    onNavigateToIdeas        = { navController.navigate(Routes.IDEAS) },
+                    onNavigateToProjects     = { navController.navigate(Routes.PROJECTS) },
+                    onNavigateToDashboard    = { navController.navigate(Routes.DASHBOARD) },
+                    onNavigateToGamification = { navController.navigate(Routes.GAMIFICATION) }
+                )
+            }
             composable(Routes.GUIDELINES)   { GuidelinesScreen() }
             composable(Routes.IDEAS)        { IdeasScreen() }
             composable(Routes.PROJECTS)     { ProjectsScreen() }
@@ -121,9 +130,6 @@ fun AppNavHost(
 }
 
 // ── Placeholders — substituir por composables reais em ui.screens ─────────────
-
-@Composable
-internal fun HomeScreen() = PlaceholderScreen("Home")
 
 @Composable
 internal fun GuidelinesScreen() = PlaceholderScreen("Estratégias")
