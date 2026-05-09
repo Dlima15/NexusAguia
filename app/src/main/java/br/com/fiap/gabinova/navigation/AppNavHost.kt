@@ -7,21 +7,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.GabBottomBar
 import br.com.fiap.gabinova.ui.components.GabScaffold
 import br.com.fiap.gabinova.ui.components.GabTopBar
+import br.com.fiap.gabinova.ui.screens.LoginScreen
 import br.com.fiap.gabinova.ui.theme.GabBackground
 
-// Rotas que exibem GabTopBar + GabBottomBar
 private val authenticatedRoutes = setOf(
     Routes.HOME,
     Routes.GUIDELINES,
@@ -35,18 +39,23 @@ private val authenticatedRoutes = setOf(
 fun AppNavHost(
     navController: NavHostController = rememberNavController()
 ) {
-    val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry?.destination?.route
+    val context        = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
 
-    val showBars = currentRoute in authenticatedRoutes
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute   = backStackEntry?.destination?.route
+    val showBars       = currentRoute in authenticatedRoutes
+
+    val userName by sessionManager.userNameFlow.collectAsState(initial = "")
+    val userRole by sessionManager.userRoleFlow.collectAsState(initial = "")
 
     GabScaffold(
         topBar = {
             if (showBars) {
                 GabTopBar(
-                    userName = "Usuário",
-                    userRole = "Colaborador",
-                    onAvatarClick = { /* abrir perfil */ }
+                    userName    = userName.ifBlank { "Usuário" },
+                    userRole    = userRole,
+                    onAvatarClick = { /* TODO: abrir perfil */ }
                 )
             }
         },
@@ -56,7 +65,6 @@ fun AppNavHost(
                     selectedRoute = currentRoute ?: Routes.HOME,
                     onItemSelected = { item ->
                         navController.navigate(item.route) {
-                            // Evita pilha crescente ao trocar de aba
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
                             }
@@ -106,8 +114,7 @@ fun AppNavHost(
     }
 }
 
-// ── Placeholders ─────────────────────────────────────────────────────────────
-// Substituir pelos composables reais em ui.screens quando implementados.
+// ── Placeholders — substituir por composables reais em ui.screens ─────────────
 
 @Composable
 internal fun SplashScreen(onNavigateToLogin: () -> Unit) {
@@ -119,51 +126,25 @@ internal fun SplashScreen(onNavigateToLogin: () -> Unit) {
     ) {
         Text(text = "Splash", style = MaterialTheme.typography.headlineMedium)
     }
-    // TODO: implementar animação e lógica de auto-redirect
 }
 
 @Composable
-internal fun LoginScreen(onLoginSuccess: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(GabBackground),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "Login", style = MaterialTheme.typography.headlineMedium)
-    }
-    // TODO: implementar formulário de login
-}
+internal fun HomeScreen() = PlaceholderScreen("Home")
 
 @Composable
-internal fun HomeScreen() {
-    PlaceholderScreen(label = "Home")
-}
+internal fun GuidelinesScreen() = PlaceholderScreen("Estratégias")
 
 @Composable
-internal fun GuidelinesScreen() {
-    PlaceholderScreen(label = "Estratégias")
-}
+internal fun IdeasScreen() = PlaceholderScreen("Ideias")
 
 @Composable
-internal fun IdeasScreen() {
-    PlaceholderScreen(label = "Ideias")
-}
+internal fun ProjectsScreen() = PlaceholderScreen("Projetos")
 
 @Composable
-internal fun ProjectsScreen() {
-    PlaceholderScreen(label = "Projetos")
-}
+internal fun DashboardScreen() = PlaceholderScreen("Dashboard")
 
 @Composable
-internal fun DashboardScreen() {
-    PlaceholderScreen(label = "Dashboard")
-}
-
-@Composable
-internal fun GamificationScreen() {
-    PlaceholderScreen(label = "Gamificação")
-}
+internal fun GamificationScreen() = PlaceholderScreen("Gamificação")
 
 @Composable
 private fun PlaceholderScreen(label: String) {
