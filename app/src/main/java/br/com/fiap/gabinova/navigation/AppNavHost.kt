@@ -1,16 +1,10 @@
 package br.com.fiap.gabinova.navigation
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -23,14 +17,14 @@ import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.GabBottomBar
 import br.com.fiap.gabinova.ui.components.GabScaffold
 import br.com.fiap.gabinova.ui.components.GabTopBar
-import br.com.fiap.gabinova.ui.screens.HomeScreen
 import br.com.fiap.gabinova.ui.screens.DashboardScreen
+import br.com.fiap.gabinova.ui.screens.GamificationScreen
+import br.com.fiap.gabinova.ui.screens.HomeScreen
 import br.com.fiap.gabinova.ui.screens.IdeasScreen
 import br.com.fiap.gabinova.ui.screens.LoginScreen
 import br.com.fiap.gabinova.ui.screens.ProjectsScreen
 import br.com.fiap.gabinova.ui.screens.SplashScreen
 import br.com.fiap.gabinova.ui.screens.StrategicGuidelinesScreen
-import br.com.fiap.gabinova.ui.theme.GabBackground
 
 private val authenticatedRoutes = setOf(
     Routes.HOME,
@@ -133,19 +127,3 @@ fun AppNavHost(
     }
 }
 
-// ── Placeholders — substituir por composables reais em ui.screens ─────────────
-
-@Composable
-internal fun GamificationScreen() = PlaceholderScreen("Gamificação")
-
-@Composable
-private fun PlaceholderScreen(label: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(GabBackground),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = label, style = MaterialTheme.typography.headlineMedium)
-    }
-}
