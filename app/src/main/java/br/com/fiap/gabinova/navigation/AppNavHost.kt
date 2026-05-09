@@ -24,6 +24,7 @@ import br.com.fiap.gabinova.ui.components.GabBottomBar
 import br.com.fiap.gabinova.ui.components.GabScaffold
 import br.com.fiap.gabinova.ui.components.GabTopBar
 import br.com.fiap.gabinova.ui.screens.HomeScreen
+import br.com.fiap.gabinova.ui.screens.IdeasScreen
 import br.com.fiap.gabinova.ui.screens.LoginScreen
 import br.com.fiap.gabinova.ui.screens.SplashScreen
 import br.com.fiap.gabinova.ui.screens.StrategicGuidelinesScreen
@@ -131,9 +132,6 @@ fun AppNavHost(
 }
 
 // ── Placeholders — substituir por composables reais em ui.screens ─────────────
-
-@Composable
-internal fun IdeasScreen() = PlaceholderScreen("Ideias")
 
 @Composable
 internal fun ProjectsScreen() = PlaceholderScreen("Projetos")
