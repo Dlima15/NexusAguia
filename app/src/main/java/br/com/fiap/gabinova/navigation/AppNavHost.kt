@@ -26,6 +26,7 @@ import br.com.fiap.gabinova.ui.components.GabTopBar
 import br.com.fiap.gabinova.ui.screens.HomeScreen
 import br.com.fiap.gabinova.ui.screens.LoginScreen
 import br.com.fiap.gabinova.ui.screens.SplashScreen
+import br.com.fiap.gabinova.ui.screens.StrategicGuidelinesScreen
 import br.com.fiap.gabinova.ui.theme.GabBackground
 
 private val authenticatedRoutes = setOf(
@@ -120,7 +121,7 @@ fun AppNavHost(
                     onNavigateToGamification = { navController.navigate(Routes.GAMIFICATION) }
                 )
             }
-            composable(Routes.GUIDELINES)   { GuidelinesScreen() }
+            composable(Routes.GUIDELINES)   { StrategicGuidelinesScreen() }
             composable(Routes.IDEAS)        { IdeasScreen() }
             composable(Routes.PROJECTS)     { ProjectsScreen() }
             composable(Routes.DASHBOARD)    { DashboardScreen() }
@@ -130,9 +131,6 @@ fun AppNavHost(
 }
 
 // ── Placeholders — substituir por composables reais em ui.screens ─────────────
-
-@Composable
-internal fun GuidelinesScreen() = PlaceholderScreen("Estratégias")
 
 @Composable
 internal fun IdeasScreen() = PlaceholderScreen("Ideias")
