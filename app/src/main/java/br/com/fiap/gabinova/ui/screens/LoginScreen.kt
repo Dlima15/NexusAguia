@@ -55,6 +55,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import br.com.fiap.gabinova.data.remote.service.RetrofitClient
 import br.com.fiap.gabinova.repository.AuthRepository
 import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.PrimaryButton
@@ -116,7 +117,7 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
 private class LoginViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        LoginViewModel(AuthRepository(SessionManager(context))) as T
+        LoginViewModel(AuthRepository(SessionManager(context), RetrofitClient.api)) as T
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────

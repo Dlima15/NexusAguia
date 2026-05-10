@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,8 +63,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import br.com.fiap.gabinova.data.remote.ApiResult
+import br.com.fiap.gabinova.data.remote.dto.GuidelineDto
+import br.com.fiap.gabinova.data.remote.service.RetrofitClient
 import br.com.fiap.gabinova.model.StrategicGuideline
 import br.com.fiap.gabinova.model.UserRole
+import br.com.fiap.gabinova.repository.GuidelineRepository
 import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.EmptyState
 import br.com.fiap.gabinova.ui.theme.GabBackground
@@ -115,7 +120,9 @@ data class GuidelinesUiState(
     val formDescription:  String   = "",
     val formCategory:     String   = "Inovação",
     val formPriority:     Int      = 3,
-    val formError:        String?  = null
+    val formError:        String?  = null,
+    val isLoading:        Boolean  = false,
+    val error:            String?  = null
 ) {
     val filteredGuidelines get() =
         if (selectedCategory == "Todas") guidelines
@@ -126,7 +133,20 @@ data class GuidelinesUiState(
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class GuidelinesViewModel(private val sessionManager: SessionManager) : ViewModel() {
+private fun GuidelineDto.toGuideline() = StrategicGuideline(
+    id          = id,
+    title       = title,
+    description = description,
+    category    = category,
+    priority    = priority.toIntOrNull() ?: 3,
+    active      = status.equals("ACTIVE", ignoreCase = true),
+    createdAt   = createdAt
+)
+
+class GuidelinesViewModel(
+    private val sessionManager: SessionManager,
+    private val guidelineRepository: GuidelineRepository
+) : ViewModel() {
 
     var uiState by mutableStateOf(GuidelinesUiState())
         private set
@@ -135,8 +155,19 @@ class GuidelinesViewModel(private val sessionManager: SessionManager) : ViewMode
         viewModelScope.launch {
             sessionManager.userRoleFlow.collect { roleStr ->
                 val role = runCatching { UserRole.valueOf(roleStr) }.getOrDefault(UserRole.COLLABORATOR)
-                uiState = uiState.copy(userRole = role, guidelines = mockGuidelines())
+                uiState = uiState.copy(userRole = role)
             }
+        }
+        viewModelScope.launch { loadGuidelines() }
+    }
+
+    fun retry() { viewModelScope.launch { loadGuidelines() } }
+
+    private suspend fun loadGuidelines() {
+        uiState = uiState.copy(isLoading = true, error = null)
+        when (val result = guidelineRepository.getGuidelines()) {
+            is ApiResult.Success -> uiState = uiState.copy(isLoading = false, guidelines = result.data.map { it.toGuideline() })
+            is ApiResult.Error   -> uiState = uiState.copy(isLoading = false, error = result.message)
         }
     }
 
@@ -173,37 +204,40 @@ class GuidelinesViewModel(private val sessionManager: SessionManager) : ViewMode
             uiState = uiState.copy(formError = "O título é obrigatório.")
             return
         }
-        val s   = uiState
-        val id  = s.editingGuideline?.id ?: "gid-${System.currentTimeMillis()}"
-        val new = StrategicGuideline(
-            id          = id,
-            title       = s.formTitle.trim(),
-            description = s.formDescription.trim(),
-            category    = s.formCategory,
-            priority    = s.formPriority,
-            active      = true,
-            createdAt   = s.editingGuideline?.createdAt ?: "2025-01-01T00:00:00Z"
-        )
-        val updated = if (s.editingGuideline != null)
-            s.guidelines.map { if (it.id == id) new else it }
-        else
-            listOf(new) + s.guidelines
-
-        uiState = s.copy(guidelines = updated, isFormVisible = false, editingGuideline = null)
+        val s = uiState
+        viewModelScope.launch {
+            uiState = uiState.copy(isLoading = true, formError = null)
+            val result = if (s.editingGuideline != null) {
+                guidelineRepository.updateGuideline(
+                    s.editingGuideline.id, s.formTitle.trim(),
+                    s.formDescription.trim(), s.formCategory, s.formPriority.toString()
+                )
+            } else {
+                guidelineRepository.createGuideline(
+                    s.formTitle.trim(), s.formDescription.trim(),
+                    s.formCategory, s.formPriority.toString()
+                )
+            }
+            when (result) {
+                is ApiResult.Success -> {
+                    val updated = result.data.toGuideline()
+                    val list    = if (s.editingGuideline != null)
+                        s.guidelines.map { if (it.id == updated.id) updated else it }
+                    else
+                        listOf(updated) + s.guidelines
+                    uiState = uiState.copy(isLoading = false, guidelines = list, isFormVisible = false, editingGuideline = null)
+                }
+                is ApiResult.Error -> uiState = uiState.copy(isLoading = false, formError = result.message)
+            }
+        }
     }
 
     fun deleteGuideline(id: String) {
-        uiState = uiState.copy(guidelines = uiState.guidelines.filter { it.id != id })
+        viewModelScope.launch {
+            guidelineRepository.deleteGuideline(id)
+            uiState = uiState.copy(guidelines = uiState.guidelines.filter { it.id != id })
+        }
     }
-
-    private fun mockGuidelines() = listOf(
-        StrategicGuideline("1", "Transformação Digital",      "Acelerar a digitalização dos processos internos para aumentar eficiência e reduzir custos operacionais.",  "Tecnologia",      1, true, "2025-01-10T00:00:00Z"),
-        StrategicGuideline("2", "Sustentabilidade ESG",       "Incorporar práticas ambientais, sociais e de governança em todas as operações do grupo Águia Branca.",     "Sustentabilidade",2, true, "2025-01-12T00:00:00Z"),
-        StrategicGuideline("3", "Cultura de Inovação",        "Fomentar o intraempreendedorismo e a geração contínua de novas ideias pelos colaboradores.",               "Inovação",        2, true, "2025-01-15T00:00:00Z"),
-        StrategicGuideline("4", "Desenvolvimento de Pessoas", "Investir em capacitação, mentoria e crescimento profissional de todos os colaboradores do grupo.",         "Pessoas",         3, true, "2025-02-01T00:00:00Z"),
-        StrategicGuideline("5", "Excelência Operacional",     "Otimizar processos logísticos e de atendimento reduzindo retrabalho e custos operacionais.",              "Operações",       3, true, "2025-02-10T00:00:00Z"),
-        StrategicGuideline("6", "Expansão de Mercado",        "Identificar novas oportunidades de negócio, geografias e segmentos estratégicos para crescimento.",       "Finanças",        4, true, "2025-03-01T00:00:00Z"),
-    )
 }
 
 // ── Factory ───────────────────────────────────────────────────────────────────
@@ -211,7 +245,7 @@ class GuidelinesViewModel(private val sessionManager: SessionManager) : ViewMode
 private class GuidelinesViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        GuidelinesViewModel(SessionManager(context)) as T
+        GuidelinesViewModel(SessionManager(context), GuidelineRepository(RetrofitClient.api)) as T
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -226,13 +260,33 @@ fun StrategicGuidelinesScreen() {
 
     var deleteCandidate by remember { mutableStateOf<StrategicGuideline?>(null) }
 
-    GuidelinesContent(
-        state            = state,
-        onCategoryFilter = vm::onCategoryFilter,
-        onEditClick      = vm::showEditForm,
-        onDeleteClick    = { deleteCandidate = it },
-        onFabClick       = vm::showCreateForm
-    )
+    when {
+        state.isLoading -> Box(
+            modifier         = Modifier.fillMaxSize().background(GabBackground),
+            contentAlignment = Alignment.Center
+        ) { CircularProgressIndicator(color = GabBlue) }
+
+        state.error != null -> Box(
+            modifier         = Modifier.fillMaxSize().background(GabBackground).padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(state.error!!, color = GabError)
+                Spacer(Modifier.height(16.dp))
+                Button(onClick = vm::retry, colors = ButtonDefaults.buttonColors(containerColor = GabBlue)) {
+                    Text("Tentar novamente", color = GabOnPrimary)
+                }
+            }
+        }
+
+        else -> GuidelinesContent(
+            state            = state,
+            onCategoryFilter = vm::onCategoryFilter,
+            onEditClick      = vm::showEditForm,
+            onDeleteClick    = { deleteCandidate = it },
+            onFabClick       = vm::showCreateForm
+        )
+    }
 
     // ── Form — ModalBottomSheet ────────────────────────────────────────────────
     if (state.isFormVisible) {

@@ -1,6 +1,9 @@
 package br.com.fiap.gabinova.ui.screens
 
 import android.content.Context
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,6 +56,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import br.com.fiap.gabinova.data.remote.ApiResult
+import br.com.fiap.gabinova.data.remote.dto.BadgeDto
+import br.com.fiap.gabinova.data.remote.dto.GamificationDto
+import br.com.fiap.gabinova.data.remote.dto.RankingDto
+import br.com.fiap.gabinova.data.remote.dto.ScoreHistoryDto
+import br.com.fiap.gabinova.data.remote.service.RetrofitClient
+import br.com.fiap.gabinova.repository.GamificationRepository
 import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.BadgeCard
 import br.com.fiap.gabinova.ui.components.RankingCard
@@ -163,13 +173,15 @@ data class LocalRankingItem(
 // ── UI State ───────────────────────────────────────────────────────────────────
 
 data class GamificationUiState(
-    val userName: String       = "Usuário",
-    val userId: String         = "",
-    val points: Int            = 235,
-    val rankingPosition: Int   = 7,
-    val badges: List<LocalBadge>        = emptyList(),
+    val userName: String                    = "Usuário",
+    val userId: String                      = "",
+    val points: Int                         = 0,
+    val rankingPosition: Int               = 0,
+    val badges: List<LocalBadge>           = emptyList(),
     val rankingList: List<LocalRankingItem> = emptyList(),
-    val history: List<ScoreEvent>       = emptyList()
+    val history: List<ScoreEvent>          = emptyList(),
+    val isLoading: Boolean                 = false,
+    val error: String?                     = null
 ) {
     val level: LevelDef       get() = levelOf(points)
     val progress: Float       get() = levelProgress(points)
@@ -180,15 +192,47 @@ data class GamificationUiState(
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class GamificationViewModel(private val sessionManager: SessionManager) : ViewModel() {
+private fun badgeIcon(name: String): ImageVector = when {
+    name.contains("Primeira",    ignoreCase = true) -> Icons.Filled.Lightbulb
+    name.contains("Aprovada",    ignoreCase = true) -> Icons.Filled.CheckCircle
+    name.contains("Impacto",     ignoreCase = true) -> Icons.Filled.TrendingUp
+    name.contains("Custo",       ignoreCase = true) -> Icons.Filled.Savings
+    name.contains("Produtividade",ignoreCase = true)-> Icons.Filled.EmojiEvents
+    name.contains("Inovador",    ignoreCase = true) -> Icons.Filled.Star
+    name.contains("Projeto",     ignoreCase = true) -> Icons.Filled.RocketLaunch
+    else                                             -> Icons.Filled.Star
+}
 
-    var state by mutableStateOf(
-        GamificationUiState(
-            badges      = mockBadges(),
-            rankingList = mockRanking("", "Você"),
-            history     = mockHistory()
-        )
-    )
+private fun BadgeDto.toLocalBadge() = LocalBadge(
+    id       = id,
+    name     = name,
+    description = if (earned && earnedAt != null) earnedAt else name,
+    icon     = badgeIcon(name),
+    earned   = earned,
+    earnedAt = earnedAt
+)
+
+private fun ScoreHistoryDto.toScoreEvent() = ScoreEvent(
+    points      = points,
+    description = description,
+    date        = date,
+    type        = runCatching { ScoreEventType.valueOf(eventType) }.getOrDefault(ScoreEventType.IDEA_CREATED)
+)
+
+private fun RankingDto.toLocalRanking(currentUserId: String) = LocalRankingItem(
+    position      = position,
+    userName      = userName,
+    points        = points,
+    department    = department,
+    isCurrentUser = userId == currentUserId
+)
+
+class GamificationViewModel(
+    private val sessionManager: SessionManager,
+    private val gamificationRepository: GamificationRepository
+) : ViewModel() {
+
+    var state by mutableStateOf(GamificationUiState())
         private set
 
     init {
@@ -198,55 +242,36 @@ class GamificationViewModel(private val sessionManager: SessionManager) : ViewMo
                 sessionManager.userNameFlow
             ) { id, name -> Pair(id, name) }.collect { (id, name) ->
                 val displayName = name.ifBlank { "Usuário" }
-                state = state.copy(
-                    userId      = id,
-                    userName    = displayName,
-                    rankingList = mockRanking(id, displayName)
-                )
+                state = state.copy(userId = id, userName = displayName)
+                if (id.isNotBlank()) loadData(id)
             }
         }
     }
 
-    private fun mockBadges(): List<LocalBadge> = listOf(
-        LocalBadge("b1", "Primeira Ideia",         "Cadastrou sua primeira ideia na plataforma",     Icons.Filled.Lightbulb,    true,  "15/03/2025"),
-        LocalBadge("b2", "Ideia Aprovada",          "Teve uma ideia aprovada pela liderança",         Icons.Filled.CheckCircle,  true,  "02/04/2025"),
-        LocalBadge("b3", "Solução de Alto Impacto", "Ideia com impacto avaliado como alto",           Icons.Filled.TrendingUp,   true,  "02/04/2025"),
-        LocalBadge("b4", "Redução de Custos",       "Ideia aprovada na categoria Redução de Custo",   Icons.Filled.Savings,      false, null),
-        LocalBadge("b5", "Campeão da Produtividade","Ganho de produtividade validado em projeto",      Icons.Filled.EmojiEvents,  false, null),
-        LocalBadge("b6", "Top Inovador do Mês",     "Maior pontuação entre os colaboradores no mês",  Icons.Filled.Star,         false, null),
-        LocalBadge("b7", "Ideia que Virou Projeto",  "Uma ideia sua se tornou um projeto oficial",    Icons.Filled.RocketLaunch, false, null)
-    )
+    fun retry() { viewModelScope.launch { loadData(state.userId) } }
 
-    private fun mockRanking(currentId: String, currentName: String): List<LocalRankingItem> = listOf(
-        LocalRankingItem(1,  "Mariana Costa",    480, "Comercial",   currentId == "mariana"),
-        LocalRankingItem(2,  "Carlos Ferreira",  375, "Operações",   currentId == "carlos"),
-        LocalRankingItem(3,  "Ana Lima",         310, "RH",          currentId == "ana"),
-        LocalRankingItem(4,  "Roberto Santos",   295, "Tecnologia",  currentId == "roberto"),
-        LocalRankingItem(5,  "Patrícia Rocha",   270, "Financeiro",  currentId == "patricia"),
-        LocalRankingItem(6,  "Fernando Nunes",   255, "Logística",   currentId == "fernando"),
-        LocalRankingItem(7,  currentName,        235, "GAB Inova",   true),
-        LocalRankingItem(8,  "Luciana Melo",     190, "Atendimento", currentId == "luciana"),
-        LocalRankingItem(9,  "Eduardo Dias",     145, "Jurídico",    currentId == "eduardo"),
-        LocalRankingItem(10, "Beatriz Alves",     80, "RH",          currentId == "beatriz")
-    )
+    private suspend fun loadData(userId: String) {
+        state = state.copy(isLoading = true, error = null)
+        val gamResult = gamificationRepository.getGamification(userId)
+        val rankResult = gamificationRepository.getRanking()
 
-    private fun mockHistory(): List<ScoreEvent> = listOf(
-        ScoreEvent(50,  "Ideia aprovada: Checklist digital para embarque",            "02/04/2025", ScoreEventType.IDEA_APPROVED),
-        ScoreEvent(20,  "Ideia priorizada: Sistema de monitoramento de frota",        "18/03/2025", ScoreEventType.IDEA_PRIORITIZED),
-        ScoreEvent(50,  "Ideia aprovada: Sistema de monitoramento de frota",          "28/02/2025", ScoreEventType.IDEA_APPROVED),
-        ScoreEvent(20,  "Ideia priorizada: Treinamento gamificado para motoristas",   "22/02/2025", ScoreEventType.IDEA_PRIORITIZED),
-        ScoreEvent(10,  "Nova ideia cadastrada: Checklist digital para embarque",     "10/03/2025", ScoreEventType.IDEA_CREATED),
-        ScoreEvent(5,   "Descrição detalhada: Checklist digital para embarque",       "10/03/2025", ScoreEventType.IDEA_DESCRIBED),
-        ScoreEvent(10,  "Nova ideia cadastrada: Sistema de monitoramento de frota",   "01/03/2025", ScoreEventType.IDEA_CREATED),
-        ScoreEvent(5,   "Descrição detalhada: Sistema de monitoramento de frota",     "01/03/2025", ScoreEventType.IDEA_DESCRIBED),
-        ScoreEvent(10,  "Nova ideia cadastrada: Treinamento gamificado",              "20/02/2025", ScoreEventType.IDEA_CREATED),
-        ScoreEvent(5,   "Descrição detalhada: Treinamento gamificado",               "20/02/2025", ScoreEventType.IDEA_DESCRIBED),
-        ScoreEvent(20,  "Ideia priorizada: Painel de feedback de clientes",           "20/01/2025", ScoreEventType.IDEA_PRIORITIZED),
-        ScoreEvent(10,  "Nova ideia cadastrada: Painel de feedback de clientes",      "15/01/2025", ScoreEventType.IDEA_CREATED),
-        ScoreEvent(5,   "Descrição detalhada: Painel de feedback de clientes",        "15/01/2025", ScoreEventType.IDEA_DESCRIBED),
-        ScoreEvent(10,  "Nova ideia cadastrada: Programa de carona corporativa",      "10/01/2025", ScoreEventType.IDEA_CREATED),
-        ScoreEvent(5,   "Descrição detalhada: Programa de carona corporativa",        "10/01/2025", ScoreEventType.IDEA_DESCRIBED)
-    )
+        if (gamResult is ApiResult.Error) {
+            state = state.copy(isLoading = false, error = gamResult.message)
+            return
+        }
+
+        val gam     = (gamResult as ApiResult.Success).data
+        val ranking = if (rankResult is ApiResult.Success) rankResult.data else emptyList()
+
+        state = state.copy(
+            isLoading       = false,
+            points          = gam.points,
+            rankingPosition = ranking.firstOrNull { it.userId == userId }?.position ?: 0,
+            badges          = gam.badges.map { it.toLocalBadge() },
+            history         = gam.history.map { it.toScoreEvent() },
+            rankingList     = ranking.map { it.toLocalRanking(userId) }
+        )
+    }
 }
 
 // ── Factory ────────────────────────────────────────────────────────────────────
@@ -254,7 +279,7 @@ class GamificationViewModel(private val sessionManager: SessionManager) : ViewMo
 private class GamificationViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        GamificationViewModel(SessionManager(context)) as T
+        GamificationViewModel(SessionManager(context), GamificationRepository(RetrofitClient.api)) as T
 }
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
@@ -263,7 +288,29 @@ private class GamificationViewModelFactory(private val context: Context) : ViewM
 fun GamificationScreen() {
     val context = LocalContext.current
     val vm: GamificationViewModel = viewModel(factory = GamificationViewModelFactory(context))
-    GamificationContent(state = vm.state)
+
+    when {
+        vm.state.isLoading -> Box(
+            modifier         = Modifier.fillMaxSize().background(GabBackground),
+            contentAlignment = Alignment.Center
+        ) { CircularProgressIndicator(color = GabBlue) }
+
+        vm.state.error != null -> Box(
+            modifier         = Modifier.fillMaxSize().background(GabBackground).padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(vm.state.error!!, color = GabError, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(16.dp))
+                Button(
+                    onClick = vm::retry,
+                    colors  = ButtonDefaults.buttonColors(containerColor = GabBlue)
+                ) { Text("Tentar novamente", color = GabOnPrimary) }
+            }
+        }
+
+        else -> GamificationContent(state = vm.state)
+    }
 }
 
 // ── Content ────────────────────────────────────────────────────────────────────

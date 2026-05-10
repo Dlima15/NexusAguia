@@ -21,8 +21,11 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Work
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -43,7 +46,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import br.com.fiap.gabinova.data.remote.ApiResult
+import br.com.fiap.gabinova.data.remote.dto.DashboardDto
+import br.com.fiap.gabinova.data.remote.service.RetrofitClient
 import br.com.fiap.gabinova.model.UserRole
+import br.com.fiap.gabinova.repository.DashboardRepository
 import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.SectionTitle
 import br.com.fiap.gabinova.ui.components.StatCard
@@ -124,16 +131,40 @@ data class DashboardData(
 // ── UI State ───────────────────────────────────────────────────────────────────
 
 data class DashboardUiState(
-    val userRole: UserRole   = UserRole.COLLABORATOR,
-    val data: DashboardData  = DashboardData()
+    val userRole:  UserRole      = UserRole.COLLABORATOR,
+    val data:      DashboardData = DashboardData(),
+    val isLoading: Boolean       = false,
+    val error:     String?       = null
 ) {
     val isLeadership get() = userRole == UserRole.ADMIN || userRole == UserRole.ANALYST
     val isManager    get() = userRole == UserRole.MANAGER
 }
 
+private fun DashboardDto.toDashboardData() = DashboardData(
+    totalIdeas           = totalIdeas,
+    approvedIdeas        = approvedIdeas,
+    inReviewIdeas        = inReviewIdeas,
+    ideasThisMonth       = ideasThisMonth,
+    activeProjects       = activeProjects,
+    completedProjects    = completedProjects,
+    totalProjects        = totalProjects,
+    totalInvestment      = totalInvestment,
+    financialReturn      = financialReturn,
+    roi                  = roi,
+    economyGenerated     = economyGenerated,
+    productivityGain     = productivityGain,
+    engagedCollaborators = engagedCollaborators,
+    totalCollaborators   = totalCollaborators,
+    engagementRate       = engagementRate,
+    topGuideline         = topGuideline
+)
+
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class DashboardViewModel(private val sessionManager: SessionManager) : ViewModel() {
+class DashboardViewModel(
+    private val sessionManager: SessionManager,
+    private val dashboardRepository: DashboardRepository
+) : ViewModel() {
 
     var state by mutableStateOf(DashboardUiState())
         private set
@@ -145,6 +176,17 @@ class DashboardViewModel(private val sessionManager: SessionManager) : ViewModel
                 state = state.copy(userRole = role)
             }
         }
+        viewModelScope.launch { loadDashboard() }
+    }
+
+    fun retry() { viewModelScope.launch { loadDashboard() } }
+
+    private suspend fun loadDashboard() {
+        state = state.copy(isLoading = true, error = null)
+        when (val result = dashboardRepository.getDashboard()) {
+            is ApiResult.Success -> state = state.copy(isLoading = false, data = result.data.toDashboardData())
+            is ApiResult.Error   -> state = state.copy(isLoading = false, error = result.message)
+        }
     }
 }
 
@@ -153,7 +195,7 @@ class DashboardViewModel(private val sessionManager: SessionManager) : ViewModel
 private class DashboardViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        DashboardViewModel(SessionManager(context)) as T
+        DashboardViewModel(SessionManager(context), DashboardRepository(RetrofitClient.api)) as T
 }
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
@@ -162,7 +204,29 @@ private class DashboardViewModelFactory(private val context: Context) : ViewMode
 fun DashboardScreen() {
     val context = LocalContext.current
     val vm: DashboardViewModel = viewModel(factory = DashboardViewModelFactory(context))
-    DashboardContent(state = vm.state)
+
+    when {
+        vm.state.isLoading -> Box(
+            modifier            = Modifier.fillMaxSize().background(GabBackground),
+            contentAlignment    = Alignment.Center
+        ) { CircularProgressIndicator(color = GabBlue) }
+
+        vm.state.error != null -> Box(
+            modifier         = Modifier.fillMaxSize().background(GabBackground).padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(vm.state.error!!, color = GabError, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(16.dp))
+                Button(
+                    onClick = vm::retry,
+                    colors  = ButtonDefaults.buttonColors(containerColor = GabBlue)
+                ) { Text("Tentar novamente", color = Color.White) }
+            }
+        }
+
+        else -> DashboardContent(state = vm.state)
+    }
 }
 
 // ── Content ────────────────────────────────────────────────────────────────────

@@ -61,8 +61,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import br.com.fiap.gabinova.data.remote.ApiResult
+import br.com.fiap.gabinova.data.remote.dto.IdeaDto
+import br.com.fiap.gabinova.data.remote.service.RetrofitClient
 import br.com.fiap.gabinova.model.IdeaStatus
 import br.com.fiap.gabinova.model.UserRole
+import br.com.fiap.gabinova.repository.IdeasRepository
 import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.EmptyState
 import br.com.fiap.gabinova.ui.components.GabStatus
@@ -177,7 +181,9 @@ data class IdeasUiState(
     val formCategory: String = "",
     val formExpectedImpact: String = "",
     val formUrgency: Int = 3,
-    val formError: String? = null
+    val formError: String? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null
 ) {
     val visibleIdeas: List<IdeaItem>
         get() {
@@ -194,9 +200,27 @@ data class IdeasUiState(
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class IdeasViewModel(private val sessionManager: SessionManager) : ViewModel() {
+private fun IdeaDto.toIdeaItem() = IdeaItem(
+    id             = id,
+    title          = title,
+    description    = description,
+    sector         = sector,
+    category       = category,
+    expectedImpact = expectedImpact,
+    urgency        = urgency,
+    status         = runCatching { IdeaStatus.valueOf(status) }.getOrDefault(IdeaStatus.PENDING),
+    authorId       = authorId,
+    authorName     = authorName,
+    createdAt      = createdAt,
+    score          = score
+)
 
-    var state by mutableStateOf(IdeasUiState(ideas = mockIdeas()))
+class IdeasViewModel(
+    private val sessionManager: SessionManager,
+    private val ideasRepository: IdeasRepository
+) : ViewModel() {
+
+    var state by mutableStateOf(IdeasUiState())
         private set
 
     init {
@@ -217,7 +241,22 @@ class IdeasViewModel(private val sessionManager: SessionManager) : ViewModel() {
                     currentUserId   = userId,
                     currentUserName = userName
                 )
+                loadIdeas(role, userId)
             }
+        }
+    }
+
+    fun retry() { viewModelScope.launch { loadIdeas(state.userRole, state.currentUserId) } }
+
+    private suspend fun loadIdeas(role: UserRole, userId: String) {
+        state = state.copy(isLoading = true, error = null)
+        val result = if (role == UserRole.COLLABORATOR && userId.isNotBlank())
+            ideasRepository.getIdeasByUser(userId)
+        else
+            ideasRepository.getIdeas()
+        when (result) {
+            is ApiResult.Success -> state = state.copy(isLoading = false, ideas = result.data.map { it.toIdeaItem() })
+            is ApiResult.Error   -> state = state.copy(isLoading = false, error = result.message)
         }
     }
 
@@ -251,40 +290,46 @@ class IdeasViewModel(private val sessionManager: SessionManager) : ViewModel() {
             state.formSector.isBlank()   -> { state = state.copy(formError = "Selecione um setor."); return }
             state.formCategory.isBlank() -> { state = state.copy(formError = "Selecione uma categoria."); return }
         }
-        val dateStr  = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")).format(Date())
-        val newIdea  = IdeaItem(
-            id             = UUID.randomUUID().toString(),
-            title          = state.formTitle.trim(),
-            description    = state.formDescription.trim(),
-            sector         = state.formSector,
-            category       = state.formCategory,
-            expectedImpact = state.formExpectedImpact.trim(),
-            urgency        = state.formUrgency,
-            status         = IdeaStatus.PENDING,
-            authorId       = state.currentUserId,
-            authorName     = state.currentUserName.ifBlank { "Usuário" },
-            createdAt      = dateStr,
-            score          = 10
-        )
-        state = state.copy(ideas = listOf(newIdea) + state.ideas, isFormVisible = false)
+        viewModelScope.launch {
+            state = state.copy(isLoading = true, formError = null)
+            val result = ideasRepository.createIdea(
+                title          = state.formTitle.trim(),
+                description    = state.formDescription.trim(),
+                sector         = state.formSector,
+                category       = state.formCategory,
+                expectedImpact = state.formExpectedImpact.trim(),
+                urgency        = state.formUrgency
+            )
+            when (result) {
+                is ApiResult.Success -> state = state.copy(
+                    isLoading     = false,
+                    ideas         = listOf(result.data.toIdeaItem()) + state.ideas,
+                    isFormVisible = false
+                )
+                is ApiResult.Error -> state = state.copy(isLoading = false, formError = result.message)
+            }
+        }
     }
 
     fun approveIdea(id: String) {
         state = state.copy(ideas = state.ideas.map {
             if (it.id == id) it.copy(status = IdeaStatus.APPROVED, score = it.score + 50) else it
         })
+        viewModelScope.launch { ideasRepository.updateStatus(id, "APPROVED") }
     }
 
     fun rejectIdea(id: String) {
         state = state.copy(ideas = state.ideas.map {
             if (it.id == id) it.copy(status = IdeaStatus.REJECTED) else it
         })
+        viewModelScope.launch { ideasRepository.updateStatus(id, "REJECTED") }
     }
 
     fun prioritizeIdea(id: String) {
         state = state.copy(ideas = state.ideas.map {
             if (it.id == id) it.copy(status = IdeaStatus.IN_REVIEW, score = it.score + 20) else it
         })
+        viewModelScope.launch { ideasRepository.updatePriority(id, "HIGH") }
     }
 
     private fun mockIdeas(): List<IdeaItem> = listOf(
@@ -366,7 +411,7 @@ class IdeasViewModel(private val sessionManager: SessionManager) : ViewModel() {
 private class IdeasViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        IdeasViewModel(SessionManager(context)) as T
+        IdeasViewModel(SessionManager(context), IdeasRepository(RetrofitClient.api)) as T
 }
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
@@ -379,34 +424,56 @@ fun IdeasScreen() {
     val state      = vm.state
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    if (state.isFormVisible) {
-        ModalBottomSheet(
-            onDismissRequest = vm::hideForm,
-            sheetState       = sheetState,
-            containerColor   = GabSurface
+    when {
+        state.isLoading -> Box(
+            modifier         = Modifier.fillMaxSize().background(GabBackground),
+            contentAlignment = Alignment.Center
+        ) { androidx.compose.material3.CircularProgressIndicator(color = GabBlue) }
+
+        state.error != null -> Box(
+            modifier         = Modifier.fillMaxSize().background(GabBackground).padding(24.dp),
+            contentAlignment = Alignment.Center
         ) {
-            IdeaFormSheet(
-                state                  = state,
-                onTitleChange          = vm::onTitleChange,
-                onDescriptionChange    = vm::onDescriptionChange,
-                onSectorChange         = vm::onSectorChange,
-                onCategoryChange       = vm::onCategoryChange,
-                onExpectedImpactChange = vm::onExpectedImpactChange,
-                onUrgencyChange        = vm::onUrgencyChange,
-                onSave                 = vm::saveIdea,
-                onCancel               = vm::hideForm
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(state.error!!, color = GabError)
+                Spacer(Modifier.height(16.dp))
+                Button(onClick = vm::retry,
+                    colors = ButtonDefaults.buttonColors(containerColor = GabBlue)
+                ) { Text("Tentar novamente", color = Color.White) }
+            }
+        }
+
+        else -> {
+            if (state.isFormVisible) {
+                ModalBottomSheet(
+                    onDismissRequest = vm::hideForm,
+                    sheetState       = sheetState,
+                    containerColor   = GabSurface
+                ) {
+                    IdeaFormSheet(
+                        state                  = state,
+                        onTitleChange          = vm::onTitleChange,
+                        onDescriptionChange    = vm::onDescriptionChange,
+                        onSectorChange         = vm::onSectorChange,
+                        onCategoryChange       = vm::onCategoryChange,
+                        onExpectedImpactChange = vm::onExpectedImpactChange,
+                        onUrgencyChange        = vm::onUrgencyChange,
+                        onSave                 = vm::saveIdea,
+                        onCancel               = vm::hideForm
+                    )
+                }
+            }
+
+            IdeasContent(
+                state          = state,
+                onStatusFilter = vm::onStatusFilter,
+                onAddClick     = vm::showCreateForm,
+                onApprove      = vm::approveIdea,
+                onReject       = vm::rejectIdea,
+                onPrioritize   = vm::prioritizeIdea
             )
         }
     }
-
-    IdeasContent(
-        state          = state,
-        onStatusFilter = vm::onStatusFilter,
-        onAddClick     = vm::showCreateForm,
-        onApprove      = vm::approveIdea,
-        onReject       = vm::rejectIdea,
-        onPrioritize   = vm::prioritizeIdea
-    )
 }
 
 // ── Content ────────────────────────────────────────────────────────────────────

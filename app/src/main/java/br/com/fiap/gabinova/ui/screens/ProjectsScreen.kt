@@ -68,8 +68,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material3.CircularProgressIndicator
+import br.com.fiap.gabinova.data.remote.ApiResult
+import br.com.fiap.gabinova.data.remote.dto.ProjectDto
+import br.com.fiap.gabinova.data.remote.service.RetrofitClient
 import br.com.fiap.gabinova.model.ProjectStatus
 import br.com.fiap.gabinova.model.UserRole
+import br.com.fiap.gabinova.repository.ProjectsRepository
 import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.EmptyState
 import br.com.fiap.gabinova.ui.components.GabStatus
@@ -88,7 +93,6 @@ import br.com.fiap.gabinova.ui.theme.GabTextDark
 import br.com.fiap.gabinova.ui.theme.GabYellow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 // ── Constants & helpers ────────────────────────────────────────────────────────
 
@@ -174,6 +178,8 @@ data class ProjectsUiState(
     val projects: List<ProjectItem> = emptyList(),
     val userRole: UserRole = UserRole.COLLABORATOR,
     val selectedStatus: ProjectStatus? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null,
     val isFormVisible: Boolean = false,
     val editingId: String? = null,
     val formTitle: String = "",
@@ -203,11 +209,35 @@ data class ProjectsUiState(
     val completedCount  get() = projects.count { it.status == ProjectStatus.COMPLETED }
 }
 
+// ── DTO mapper ─────────────────────────────────────────────────────────────────
+
+private fun String.toProjectStatus() =
+    runCatching { ProjectStatus.valueOf(this) }.getOrDefault(ProjectStatus.PLANNING)
+
+private fun ProjectDto.toProjectItem() = ProjectItem(
+    id             = id,
+    title          = title,
+    ideaOrigin     = ideaOrigin,
+    responsible    = responsible,
+    status         = status.toProjectStatus(),
+    stage          = stage,
+    investment     = investment,
+    expectedReturn = expectedReturn,
+    actualReturn   = actualReturn,
+    productivity   = productivity,
+    progress       = progress,
+    deadline       = deadline,
+    createdAt      = createdAt
+)
+
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class ProjectsViewModel(private val sessionManager: SessionManager) : ViewModel() {
+class ProjectsViewModel(
+    private val sessionManager: SessionManager,
+    private val projectsRepository: ProjectsRepository
+) : ViewModel() {
 
-    var state by mutableStateOf(ProjectsUiState(projects = mockProjects()))
+    var state by mutableStateOf(ProjectsUiState())
         private set
 
     init {
@@ -220,6 +250,23 @@ class ProjectsViewModel(private val sessionManager: SessionManager) : ViewModel(
             }.collect { role ->
                 state = state.copy(userRole = role)
             }
+        }
+        viewModelScope.launch { loadProjects() }
+    }
+
+    fun retry() { viewModelScope.launch { loadProjects() } }
+
+    private suspend fun loadProjects() {
+        state = state.copy(isLoading = true, error = null)
+        when (val result = projectsRepository.getProjects()) {
+            is ApiResult.Success -> state = state.copy(
+                isLoading = false,
+                projects  = result.data.map { it.toProjectItem() }
+            )
+            is ApiResult.Error   -> state = state.copy(
+                isLoading = false,
+                error     = result.message
+            )
         }
     }
 
@@ -280,111 +327,51 @@ class ProjectsViewModel(private val sessionManager: SessionManager) : ViewModel(
     fun saveProject() {
         if (state.formTitle.isBlank()) { state = state.copy(formError = "Título é obrigatório."); return }
 
-        if (state.editingId != null) {
-            state = state.copy(
-                projects = state.projects.map { p ->
-                    if (p.id != state.editingId) p else p.copy(
-                        title          = state.formTitle.trim(),
-                        ideaOrigin     = state.formIdeaOrigin.trim(),
-                        responsible    = state.formResponsible.trim(),
-                        status         = state.formStatus,
-                        stage          = state.formStage,
-                        investment     = state.formInvestment.trim(),
-                        expectedReturn = state.formExpectedReturn.trim(),
-                        actualReturn   = state.formActualReturn.trim(),
-                        productivity   = state.formProductivity.trim(),
-                        progress       = state.formProgress.toInt(),
-                        deadline       = state.formDeadline.trim()
+        viewModelScope.launch {
+            if (state.editingId != null) {
+                val editId = state.editingId!!
+                when (val result = projectsRepository.updateProject(
+                    id             = editId,
+                    title          = state.formTitle.trim(),
+                    ideaOrigin     = state.formIdeaOrigin.trim(),
+                    responsible    = state.formResponsible.trim(),
+                    status         = state.formStatus.name,
+                    stage          = state.formStage,
+                    investment     = state.formInvestment.trim(),
+                    expectedReturn = state.formExpectedReturn.trim(),
+                    actualReturn   = state.formActualReturn.trim(),
+                    productivity   = state.formProductivity.trim(),
+                    deadline       = state.formDeadline.trim()
+                )) {
+                    is ApiResult.Success -> state = state.copy(
+                        projects      = state.projects.map { p ->
+                            if (p.id == editId) result.data.toProjectItem() else p
+                        },
+                        isFormVisible = false,
+                        editingId     = null
                     )
-                },
-                isFormVisible = false,
-                editingId     = null
-            )
-        } else {
-            val newProject = ProjectItem(
-                id             = UUID.randomUUID().toString(),
-                title          = state.formTitle.trim(),
-                ideaOrigin     = state.formIdeaOrigin.trim(),
-                responsible    = state.formResponsible.trim(),
-                status         = state.formStatus,
-                stage          = state.formStage.ifBlank { PROJECT_STAGES.first() },
-                investment     = state.formInvestment.trim(),
-                expectedReturn = state.formExpectedReturn.trim(),
-                actualReturn   = state.formActualReturn.trim(),
-                productivity   = state.formProductivity.trim(),
-                progress       = state.formProgress.toInt(),
-                deadline       = state.formDeadline.trim(),
-                createdAt      = "hoje"
-            )
-            state = state.copy(
-                projects      = listOf(newProject) + state.projects,
-                isFormVisible = false
-            )
+                    is ApiResult.Error   -> state = state.copy(formError = result.message)
+                }
+            } else {
+                when (val result = projectsRepository.createProject(
+                    title          = state.formTitle.trim(),
+                    ideaOrigin     = state.formIdeaOrigin.trim(),
+                    responsible    = state.formResponsible.trim(),
+                    status         = state.formStatus.name,
+                    stage          = state.formStage.ifBlank { PROJECT_STAGES.first() },
+                    investment     = state.formInvestment.trim(),
+                    expectedReturn = state.formExpectedReturn.trim(),
+                    deadline       = state.formDeadline.trim()
+                )) {
+                    is ApiResult.Success -> state = state.copy(
+                        projects      = listOf(result.data.toProjectItem()) + state.projects,
+                        isFormVisible = false
+                    )
+                    is ApiResult.Error   -> state = state.copy(formError = result.message)
+                }
+            }
         }
     }
-
-    private fun mockProjects(): List<ProjectItem> = listOf(
-        ProjectItem(
-            id             = "p1",
-            title          = "Sistema de Monitoramento de Frota",
-            ideaOrigin     = "Sistema de monitoramento de frota em tempo real",
-            responsible    = "Gestor Regional",
-            status         = ProjectStatus.IN_PROGRESS,
-            stage          = "Desenvolvimento",
-            investment     = "R$ 120.000",
-            expectedReturn = "R$ 300.000",
-            actualReturn   = "",
-            productivity   = "72%",
-            progress       = 65,
-            deadline       = "30/09/2025",
-            createdAt      = "01/03/2025"
-        ),
-        ProjectItem(
-            id             = "p2",
-            title          = "Painel de Feedback de Clientes",
-            ideaOrigin     = "Painel de feedback de clientes por rota",
-            responsible    = "Gestor Regional",
-            status         = ProjectStatus.PLANNING,
-            stage          = "Levantamento",
-            investment     = "R$ 45.000",
-            expectedReturn = "R$ 90.000",
-            actualReturn   = "",
-            productivity   = "",
-            progress       = 10,
-            deadline       = "31/12/2025",
-            createdAt      = "15/04/2025"
-        ),
-        ProjectItem(
-            id             = "p3",
-            title          = "Programa de Carona Corporativa",
-            ideaOrigin     = "Programa de carona corporativa",
-            responsible    = "Gestor Regional",
-            status         = ProjectStatus.ON_HOLD,
-            stage          = "Planejamento",
-            investment     = "R$ 30.000",
-            expectedReturn = "R$ 60.000",
-            actualReturn   = "",
-            productivity   = "35%",
-            progress       = 25,
-            deadline       = "28/02/2026",
-            createdAt      = "20/04/2025"
-        ),
-        ProjectItem(
-            id             = "p4",
-            title          = "Plataforma de Treinamento Digital",
-            ideaOrigin     = "Treinamento gamificado para motoristas",
-            responsible    = "Gestor Regional",
-            status         = ProjectStatus.COMPLETED,
-            stage          = "Encerramento",
-            investment     = "R$ 80.000",
-            expectedReturn = "R$ 150.000",
-            actualReturn   = "R$ 178.000",
-            productivity   = "92%",
-            progress       = 100,
-            deadline       = "30/04/2025",
-            createdAt      = "01/01/2025"
-        )
-    )
 }
 
 // ── Factory ────────────────────────────────────────────────────────────────────
@@ -392,7 +379,7 @@ class ProjectsViewModel(private val sessionManager: SessionManager) : ViewModel(
 private class ProjectsViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        ProjectsViewModel(SessionManager(context)) as T
+        ProjectsViewModel(SessionManager(context), ProjectsRepository(RetrofitClient.api)) as T
 }
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
@@ -405,37 +392,68 @@ fun ProjectsScreen() {
     val state      = vm.state
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    if (state.isFormVisible) {
-        ModalBottomSheet(
-            onDismissRequest = vm::hideForm,
-            sheetState       = sheetState,
-            containerColor   = GabSurface
+    when {
+        state.isLoading -> Box(
+            modifier         = Modifier
+                .fillMaxSize()
+                .background(GabBackground),
+            contentAlignment = Alignment.Center
         ) {
-            ProjectFormSheet(
-                state                  = state,
-                onTitleChange          = vm::onTitleChange,
-                onIdeaOriginChange     = vm::onIdeaOriginChange,
-                onResponsibleChange    = vm::onResponsibleChange,
-                onStatusChange         = vm::onStatusChange,
-                onStageChange          = vm::onStageChange,
-                onInvestmentChange     = vm::onInvestmentChange,
-                onExpectedReturnChange = vm::onExpectedReturnChange,
-                onActualReturnChange   = vm::onActualReturnChange,
-                onProductivityChange   = vm::onProductivityChange,
-                onProgressChange       = vm::onProgressChange,
-                onDeadlineChange       = vm::onDeadlineChange,
-                onSave                 = vm::saveProject,
-                onCancel               = vm::hideForm
+            CircularProgressIndicator(color = GabBlue)
+        }
+        state.error != null -> Box(
+            modifier         = Modifier
+                .fillMaxSize()
+                .background(GabBackground)
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text  = state.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = GabError
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = vm::retry,
+                    colors  = ButtonDefaults.buttonColors(containerColor = GabBlue)
+                ) { Text("Tentar novamente", color = Color.White) }
+            }
+        }
+        else -> {
+            if (state.isFormVisible) {
+                ModalBottomSheet(
+                    onDismissRequest = vm::hideForm,
+                    sheetState       = sheetState,
+                    containerColor   = GabSurface
+                ) {
+                    ProjectFormSheet(
+                        state                  = state,
+                        onTitleChange          = vm::onTitleChange,
+                        onIdeaOriginChange     = vm::onIdeaOriginChange,
+                        onResponsibleChange    = vm::onResponsibleChange,
+                        onStatusChange         = vm::onStatusChange,
+                        onStageChange          = vm::onStageChange,
+                        onInvestmentChange     = vm::onInvestmentChange,
+                        onExpectedReturnChange = vm::onExpectedReturnChange,
+                        onActualReturnChange   = vm::onActualReturnChange,
+                        onProductivityChange   = vm::onProductivityChange,
+                        onProgressChange       = vm::onProgressChange,
+                        onDeadlineChange       = vm::onDeadlineChange,
+                        onSave                 = vm::saveProject,
+                        onCancel               = vm::hideForm
+                    )
+                }
+            }
+            ProjectsContent(
+                state          = state,
+                onStatusFilter = vm::onStatusFilter,
+                onAddClick     = vm::showCreateForm,
+                onEditClick    = vm::showEditForm
             )
         }
     }
-
-    ProjectsContent(
-        state          = state,
-        onStatusFilter = vm::onStatusFilter,
-        onAddClick     = vm::showCreateForm,
-        onEditClick    = vm::showEditForm
-    )
 }
 
 // ── Content ────────────────────────────────────────────────────────────────────
