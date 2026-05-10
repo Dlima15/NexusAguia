@@ -1,6 +1,5 @@
-package br.com.fiap.gabinova.ui.screens
+﻿package br.com.fiap.gabinova.ui.screens
 
-import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -57,17 +56,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import br.com.fiap.gabinova.data.remote.ApiResult
-import br.com.fiap.gabinova.data.remote.dto.IdeaDto
-import br.com.fiap.gabinova.data.remote.service.RetrofitClient
 import br.com.fiap.gabinova.model.IdeaStatus
 import br.com.fiap.gabinova.model.UserRole
-import br.com.fiap.gabinova.repository.IdeasRepository
-import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.EmptyState
 import br.com.fiap.gabinova.ui.components.GabStatus
 import br.com.fiap.gabinova.ui.components.StatusChip
@@ -81,24 +72,14 @@ import br.com.fiap.gabinova.ui.theme.GabSurface
 import br.com.fiap.gabinova.ui.theme.GabSurfaceVariant
 import br.com.fiap.gabinova.ui.theme.GabTextDark
 import br.com.fiap.gabinova.ui.theme.GabYellow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
+import br.com.fiap.gabinova.ui.viewmodel.IDEA_CATEGORIES
+import br.com.fiap.gabinova.ui.viewmodel.IDEA_SECTORS
+import br.com.fiap.gabinova.ui.viewmodel.IdeaItem
+import br.com.fiap.gabinova.ui.viewmodel.IdeasUiState
+import br.com.fiap.gabinova.ui.viewmodel.IdeasViewModel
+import br.com.fiap.gabinova.ui.viewmodel.IdeasViewModelFactory
 
 // ── Constants & helpers ────────────────────────────────────────────────────────
-
-private val IDEA_SECTORS = listOf(
-    "Operações", "Tecnologia", "RH", "Financeiro",
-    "Comercial", "Logística", "Atendimento", "Jurídico"
-)
-
-private val IDEA_CATEGORIES = listOf(
-    "Melhoria de Processo", "Redução de Custo", "Experiência do Cliente",
-    "Inovação Tecnológica", "Engajamento", "Segurança"
-)
 
 private val FILTER_STATUSES: List<IdeaStatus?> = listOf(
     null,
@@ -147,271 +128,6 @@ private fun statusFilterLabel(status: IdeaStatus?) = when (status) {
     IdeaStatus.APPROVED    -> "Aprovado"
     IdeaStatus.REJECTED    -> "Rejeitado"
     IdeaStatus.IMPLEMENTED -> "Implementado"
-}
-
-// ── Local model ────────────────────────────────────────────────────────────────
-
-data class IdeaItem(
-    val id: String,
-    val title: String,
-    val description: String,
-    val sector: String,
-    val category: String,
-    val expectedImpact: String,
-    val urgency: Int,
-    val status: IdeaStatus,
-    val authorId: String,
-    val authorName: String,
-    val createdAt: String,
-    val score: Int
-)
-
-// ── UI State ───────────────────────────────────────────────────────────────────
-
-data class IdeasUiState(
-    val ideas: List<IdeaItem> = emptyList(),
-    val userRole: UserRole = UserRole.COLLABORATOR,
-    val currentUserId: String = "",
-    val currentUserName: String = "",
-    val selectedStatus: IdeaStatus? = null,
-    val isFormVisible: Boolean = false,
-    val formTitle: String = "",
-    val formDescription: String = "",
-    val formSector: String = "",
-    val formCategory: String = "",
-    val formExpectedImpact: String = "",
-    val formUrgency: Int = 3,
-    val formError: String? = null,
-    val isLoading: Boolean = false,
-    val error: String? = null
-) {
-    val visibleIdeas: List<IdeaItem>
-        get() {
-            val base = if (userRole == UserRole.COLLABORATOR)
-                ideas.filter { it.authorId == currentUserId }
-            else
-                ideas
-            return if (selectedStatus != null) base.filter { it.status == selectedStatus } else base
-        }
-
-    val isCollaborator get() = userRole == UserRole.COLLABORATOR
-    val isManager      get() = userRole == UserRole.MANAGER
-}
-
-// ── ViewModel ─────────────────────────────────────────────────────────────────
-
-private fun IdeaDto.toIdeaItem() = IdeaItem(
-    id             = id,
-    title          = title,
-    description    = description,
-    sector         = sector,
-    category       = category,
-    expectedImpact = expectedImpact,
-    urgency        = urgency,
-    status         = runCatching { IdeaStatus.valueOf(status) }.getOrDefault(IdeaStatus.PENDING),
-    authorId       = authorId,
-    authorName     = authorName,
-    createdAt      = createdAt,
-    score          = score
-)
-
-class IdeasViewModel(
-    private val sessionManager: SessionManager,
-    private val ideasRepository: IdeasRepository
-) : ViewModel() {
-
-    var state by mutableStateOf(IdeasUiState())
-        private set
-
-    init {
-        viewModelScope.launch {
-            combine(
-                sessionManager.userRoleFlow,
-                sessionManager.userIdFlow,
-                sessionManager.userNameFlow
-            ) { roleStr, userId, userName ->
-                Triple(
-                    runCatching { UserRole.valueOf(roleStr) }.getOrDefault(UserRole.COLLABORATOR),
-                    userId,
-                    userName
-                )
-            }.collect { (role, userId, userName) ->
-                state = state.copy(
-                    userRole        = role,
-                    currentUserId   = userId,
-                    currentUserName = userName
-                )
-                loadIdeas(role, userId)
-            }
-        }
-    }
-
-    fun retry() { viewModelScope.launch { loadIdeas(state.userRole, state.currentUserId) } }
-
-    private suspend fun loadIdeas(role: UserRole, userId: String) {
-        state = state.copy(isLoading = true, error = null)
-        val result = if (role == UserRole.COLLABORATOR && userId.isNotBlank())
-            ideasRepository.getIdeasByUser(userId)
-        else
-            ideasRepository.getIdeas()
-        when (result) {
-            is ApiResult.Success -> state = state.copy(isLoading = false, ideas = result.data.map { it.toIdeaItem() })
-            is ApiResult.Error   -> state = state.copy(isLoading = false, error = result.message)
-        }
-    }
-
-    fun onStatusFilter(status: IdeaStatus?) { state = state.copy(selectedStatus = status) }
-
-    fun showCreateForm() {
-        state = state.copy(
-            isFormVisible      = true,
-            formTitle          = "",
-            formDescription    = "",
-            formSector         = "",
-            formCategory       = "",
-            formExpectedImpact = "",
-            formUrgency        = 3,
-            formError          = null
-        )
-    }
-
-    fun hideForm() { state = state.copy(isFormVisible = false, formError = null) }
-
-    fun onTitleChange(v: String)          { state = state.copy(formTitle = v, formError = null) }
-    fun onDescriptionChange(v: String)    { state = state.copy(formDescription = v) }
-    fun onSectorChange(v: String)         { state = state.copy(formSector = v, formError = null) }
-    fun onCategoryChange(v: String)       { state = state.copy(formCategory = v, formError = null) }
-    fun onExpectedImpactChange(v: String) { state = state.copy(formExpectedImpact = v) }
-    fun onUrgencyChange(v: Int)           { state = state.copy(formUrgency = v) }
-
-    fun saveIdea() {
-        when {
-            state.formTitle.isBlank()    -> { state = state.copy(formError = "Título é obrigatório."); return }
-            state.formSector.isBlank()   -> { state = state.copy(formError = "Selecione um setor."); return }
-            state.formCategory.isBlank() -> { state = state.copy(formError = "Selecione uma categoria."); return }
-        }
-        viewModelScope.launch {
-            state = state.copy(isLoading = true, formError = null)
-            val result = ideasRepository.createIdea(
-                title          = state.formTitle.trim(),
-                description    = state.formDescription.trim(),
-                sector         = state.formSector,
-                category       = state.formCategory,
-                expectedImpact = state.formExpectedImpact.trim(),
-                urgency        = state.formUrgency
-            )
-            when (result) {
-                is ApiResult.Success -> state = state.copy(
-                    isLoading     = false,
-                    ideas         = listOf(result.data.toIdeaItem()) + state.ideas,
-                    isFormVisible = false
-                )
-                is ApiResult.Error -> state = state.copy(isLoading = false, formError = result.message)
-            }
-        }
-    }
-
-    fun approveIdea(id: String) {
-        state = state.copy(ideas = state.ideas.map {
-            if (it.id == id) it.copy(status = IdeaStatus.APPROVED, score = it.score + 50) else it
-        })
-        viewModelScope.launch { ideasRepository.updateStatus(id, "APPROVED") }
-    }
-
-    fun rejectIdea(id: String) {
-        state = state.copy(ideas = state.ideas.map {
-            if (it.id == id) it.copy(status = IdeaStatus.REJECTED) else it
-        })
-        viewModelScope.launch { ideasRepository.updateStatus(id, "REJECTED") }
-    }
-
-    fun prioritizeIdea(id: String) {
-        state = state.copy(ideas = state.ideas.map {
-            if (it.id == id) it.copy(status = IdeaStatus.IN_REVIEW, score = it.score + 20) else it
-        })
-        viewModelScope.launch { ideasRepository.updatePriority(id, "HIGH") }
-    }
-
-    private fun mockIdeas(): List<IdeaItem> = listOf(
-        IdeaItem(
-            id             = "1",
-            title          = "Sistema de monitoramento de frota em tempo real",
-            description    = "Integrar GPS com telemetria para rastrear consumo de combustível e eficiência por rota.",
-            sector         = "Operações",
-            category       = "Inovação Tecnológica",
-            expectedImpact = "Redução de 15% no custo de combustível",
-            urgency        = 4,
-            status         = IdeaStatus.APPROVED,
-            authorId       = "operador",
-            authorName     = "Operador Padrão",
-            createdAt      = "02/04/2025",
-            score          = 60
-        ),
-        IdeaItem(
-            id             = "2",
-            title          = "Programa de carona corporativa",
-            description    = "Plataforma interna para funcionários que fazem o mesmo trajeto compartilharem transporte.",
-            sector         = "RH",
-            category       = "Engajamento",
-            expectedImpact = "Economia nos deslocamentos e redução de emissões de CO₂",
-            urgency        = 2,
-            status         = IdeaStatus.IN_REVIEW,
-            authorId       = "colaborador",
-            authorName     = "Ana Lima",
-            createdAt      = "10/04/2025",
-            score          = 30
-        ),
-        IdeaItem(
-            id             = "3",
-            title          = "Checklist digital para embarque",
-            description    = "Substituir papel por app mobile nas operações de embarque de passageiros.",
-            sector         = "Operações",
-            category       = "Melhoria de Processo",
-            expectedImpact = "Reduzir erros e acelerar o embarque em 30%",
-            urgency        = 3,
-            status         = IdeaStatus.PENDING,
-            authorId       = "operador",
-            authorName     = "Operador Padrão",
-            createdAt      = "18/04/2025",
-            score          = 10
-        ),
-        IdeaItem(
-            id             = "4",
-            title          = "Painel de feedback de clientes por rota",
-            description    = "Dashboard consolidado com NPS e reclamações organizados por linha.",
-            sector         = "Atendimento",
-            category       = "Experiência do Cliente",
-            expectedImpact = "Melhora na satisfação e retenção de clientes",
-            urgency        = 3,
-            status         = IdeaStatus.PENDING,
-            authorId       = "colaborador2",
-            authorName     = "Mariana Costa",
-            createdAt      = "22/04/2025",
-            score          = 10
-        ),
-        IdeaItem(
-            id             = "5",
-            title          = "Treinamento gamificado para motoristas",
-            description    = "Cursos com sistema de pontuação e rankings para engajar a equipe de condutores.",
-            sector         = "RH",
-            category       = "Engajamento",
-            expectedImpact = "Redução de acidentes e aumento de produtividade",
-            urgency        = 2,
-            status         = IdeaStatus.REJECTED,
-            authorId       = "operador",
-            authorName     = "Operador Padrão",
-            createdAt      = "01/05/2025",
-            score          = 0
-        )
-    )
-}
-
-// ── Factory ────────────────────────────────────────────────────────────────────
-
-private class IdeasViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        IdeasViewModel(SessionManager(context), IdeasRepository(RetrofitClient.api)) as T
 }
 
 // ── Screen ─────────────────────────────────────────────────────────────────────

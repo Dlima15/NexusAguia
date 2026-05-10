@@ -1,6 +1,5 @@
 package br.com.fiap.gabinova.ui.screens
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,13 +50,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import br.com.fiap.gabinova.data.remote.service.RetrofitClient
-import br.com.fiap.gabinova.repository.AuthRepository
-import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.PrimaryButton
 import br.com.fiap.gabinova.ui.theme.GabBackground
 import br.com.fiap.gabinova.ui.theme.GabBlue
@@ -68,57 +61,9 @@ import br.com.fiap.gabinova.ui.theme.GabOnSurfaceVariant
 import br.com.fiap.gabinova.ui.theme.GabSurface
 import br.com.fiap.gabinova.ui.theme.GabTextDark
 import br.com.fiap.gabinova.ui.theme.GabYellow
-import kotlinx.coroutines.launch
-
-// ── UI State ─────────────────────────────────────────────────────────────────
-
-data class LoginUiState(
-    val email: String = "",
-    val password: String = "",
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val loginSuccess: Boolean = false
-)
-
-// ── ViewModel ─────────────────────────────────────────────────────────────────
-
-class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
-
-    var uiState by mutableStateOf(LoginUiState())
-        private set
-
-    fun onEmailChange(value: String) {
-        uiState = uiState.copy(email = value, error = null)
-    }
-
-    fun onPasswordChange(value: String) {
-        uiState = uiState.copy(password = value, error = null)
-    }
-
-    fun login() {
-        if (uiState.email.isBlank() || uiState.password.isBlank()) {
-            uiState = uiState.copy(error = "Preencha e-mail e senha.")
-            return
-        }
-        viewModelScope.launch {
-            uiState = uiState.copy(isLoading = true, error = null)
-            val result = authRepository.login(uiState.email.trim(), uiState.password)
-            uiState = if (result.success) {
-                uiState.copy(isLoading = false, loginSuccess = true)
-            } else {
-                uiState.copy(isLoading = false, error = result.errorMessage)
-            }
-        }
-    }
-}
-
-// ── Factory ──────────────────────────────────────────────────────────────────
-
-private class LoginViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        LoginViewModel(AuthRepository(SessionManager(context), RetrofitClient.api)) as T
-}
+import br.com.fiap.gabinova.ui.viewmodel.LoginUiState
+import br.com.fiap.gabinova.ui.viewmodel.LoginViewModel
+import br.com.fiap.gabinova.ui.viewmodel.LoginViewModelFactory
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -297,10 +242,10 @@ internal fun LoginScreenContent(
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector   = Icons.Filled.ErrorOutline,
+                                imageVector        = Icons.Filled.ErrorOutline,
                                 contentDescription = null,
-                                tint          = GabError,
-                                modifier      = Modifier.size(16.dp)
+                                tint               = GabError,
+                                modifier           = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(

@@ -1,6 +1,5 @@
-package br.com.fiap.gabinova.ui.screens
+﻿package br.com.fiap.gabinova.ui.screens
 
-import android.content.Context
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,9 +37,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,18 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import br.com.fiap.gabinova.data.remote.ApiResult
-import br.com.fiap.gabinova.data.remote.dto.BadgeDto
-import br.com.fiap.gabinova.data.remote.dto.GamificationDto
-import br.com.fiap.gabinova.data.remote.dto.RankingDto
-import br.com.fiap.gabinova.data.remote.dto.ScoreHistoryDto
-import br.com.fiap.gabinova.data.remote.service.RetrofitClient
-import br.com.fiap.gabinova.repository.GamificationRepository
-import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.BadgeCard
 import br.com.fiap.gabinova.ui.components.RankingCard
 import br.com.fiap.gabinova.ui.components.SectionTitle
@@ -78,8 +63,14 @@ import br.com.fiap.gabinova.ui.theme.GabSurface
 import br.com.fiap.gabinova.ui.theme.GabSurfaceVariant
 import br.com.fiap.gabinova.ui.theme.GabTextDark
 import br.com.fiap.gabinova.ui.theme.GabYellow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
+import br.com.fiap.gabinova.ui.theme.GabError
+import br.com.fiap.gabinova.ui.viewmodel.GamificationUiState
+import br.com.fiap.gabinova.ui.viewmodel.GamificationViewModel
+import br.com.fiap.gabinova.ui.viewmodel.GamificationViewModelFactory
+import br.com.fiap.gabinova.ui.viewmodel.LocalBadge
+import br.com.fiap.gabinova.ui.viewmodel.LocalRankingItem
+import br.com.fiap.gabinova.ui.viewmodel.ScoreEvent
+import br.com.fiap.gabinova.ui.viewmodel.ScoreEventType
 
 // ── Level system ───────────────────────────────────────────────────────────────
 
@@ -117,169 +108,6 @@ private fun pointsToNext(points: Int): Int {
     if (cur.number == LEVEL_DEFS.size) return 0
     val next = LEVEL_DEFS[cur.number]
     return (next.minPoints - points).coerceAtLeast(0)
-}
-
-// ── Score events ───────────────────────────────────────────────────────────────
-
-enum class ScoreEventType {
-    IDEA_CREATED, IDEA_DESCRIBED, IDEA_PRIORITIZED,
-    IDEA_APPROVED, IDEA_TO_PROJECT, PROJECT_COMPLETED
-}
-
-data class ScoreEvent(
-    val points: Int,
-    val description: String,
-    val date: String,
-    val type: ScoreEventType
-)
-
-private fun eventIcon(t: ScoreEventType): ImageVector = when (t) {
-    ScoreEventType.IDEA_CREATED      -> Icons.Filled.Lightbulb
-    ScoreEventType.IDEA_DESCRIBED    -> Icons.Filled.Edit
-    ScoreEventType.IDEA_PRIORITIZED  -> Icons.Filled.TrendingUp
-    ScoreEventType.IDEA_APPROVED     -> Icons.Filled.CheckCircle
-    ScoreEventType.IDEA_TO_PROJECT   -> Icons.Filled.RocketLaunch
-    ScoreEventType.PROJECT_COMPLETED -> Icons.Filled.EmojiEvents
-}
-
-private fun eventColor(t: ScoreEventType): Color = when (t) {
-    ScoreEventType.IDEA_CREATED      -> GabBlue
-    ScoreEventType.IDEA_DESCRIBED    -> GabLightBlue
-    ScoreEventType.IDEA_PRIORITIZED  -> Color(0xFFFF9800)
-    ScoreEventType.IDEA_APPROVED     -> GabGreen
-    ScoreEventType.IDEA_TO_PROJECT   -> Color(0xFF9C27B0)
-    ScoreEventType.PROJECT_COMPLETED -> Color(0xFFFFB300)
-}
-
-// ── Local screen models ────────────────────────────────────────────────────────
-
-data class LocalBadge(
-    val id: String,
-    val name: String,
-    val description: String,
-    val icon: ImageVector,
-    val earned: Boolean,
-    val earnedAt: String? = null
-)
-
-data class LocalRankingItem(
-    val position: Int,
-    val userName: String,
-    val points: Int,
-    val department: String,
-    val isCurrentUser: Boolean
-)
-
-// ── UI State ───────────────────────────────────────────────────────────────────
-
-data class GamificationUiState(
-    val userName: String                    = "Usuário",
-    val userId: String                      = "",
-    val points: Int                         = 0,
-    val rankingPosition: Int               = 0,
-    val badges: List<LocalBadge>           = emptyList(),
-    val rankingList: List<LocalRankingItem> = emptyList(),
-    val history: List<ScoreEvent>          = emptyList(),
-    val isLoading: Boolean                 = false,
-    val error: String?                     = null
-) {
-    val level: LevelDef       get() = levelOf(points)
-    val progress: Float       get() = levelProgress(points)
-    val ptsToNext: Int        get() = pointsToNext(points)
-    val earnedCount: Int      get() = badges.count { it.earned }
-    val isMaxLevel: Boolean   get() = level.number == LEVEL_DEFS.size
-}
-
-// ── ViewModel ─────────────────────────────────────────────────────────────────
-
-private fun badgeIcon(name: String): ImageVector = when {
-    name.contains("Primeira",    ignoreCase = true) -> Icons.Filled.Lightbulb
-    name.contains("Aprovada",    ignoreCase = true) -> Icons.Filled.CheckCircle
-    name.contains("Impacto",     ignoreCase = true) -> Icons.Filled.TrendingUp
-    name.contains("Custo",       ignoreCase = true) -> Icons.Filled.Savings
-    name.contains("Produtividade",ignoreCase = true)-> Icons.Filled.EmojiEvents
-    name.contains("Inovador",    ignoreCase = true) -> Icons.Filled.Star
-    name.contains("Projeto",     ignoreCase = true) -> Icons.Filled.RocketLaunch
-    else                                             -> Icons.Filled.Star
-}
-
-private fun BadgeDto.toLocalBadge() = LocalBadge(
-    id       = id,
-    name     = name,
-    description = if (earned && earnedAt != null) earnedAt else name,
-    icon     = badgeIcon(name),
-    earned   = earned,
-    earnedAt = earnedAt
-)
-
-private fun ScoreHistoryDto.toScoreEvent() = ScoreEvent(
-    points      = points,
-    description = description,
-    date        = date,
-    type        = runCatching { ScoreEventType.valueOf(eventType) }.getOrDefault(ScoreEventType.IDEA_CREATED)
-)
-
-private fun RankingDto.toLocalRanking(currentUserId: String) = LocalRankingItem(
-    position      = position,
-    userName      = userName,
-    points        = points,
-    department    = department,
-    isCurrentUser = userId == currentUserId
-)
-
-class GamificationViewModel(
-    private val sessionManager: SessionManager,
-    private val gamificationRepository: GamificationRepository
-) : ViewModel() {
-
-    var state by mutableStateOf(GamificationUiState())
-        private set
-
-    init {
-        viewModelScope.launch {
-            combine(
-                sessionManager.userIdFlow,
-                sessionManager.userNameFlow
-            ) { id, name -> Pair(id, name) }.collect { (id, name) ->
-                val displayName = name.ifBlank { "Usuário" }
-                state = state.copy(userId = id, userName = displayName)
-                if (id.isNotBlank()) loadData(id)
-            }
-        }
-    }
-
-    fun retry() { viewModelScope.launch { loadData(state.userId) } }
-
-    private suspend fun loadData(userId: String) {
-        state = state.copy(isLoading = true, error = null)
-        val gamResult = gamificationRepository.getGamification(userId)
-        val rankResult = gamificationRepository.getRanking()
-
-        if (gamResult is ApiResult.Error) {
-            state = state.copy(isLoading = false, error = gamResult.message)
-            return
-        }
-
-        val gam     = (gamResult as ApiResult.Success).data
-        val ranking = if (rankResult is ApiResult.Success) rankResult.data else emptyList()
-
-        state = state.copy(
-            isLoading       = false,
-            points          = gam.points,
-            rankingPosition = ranking.firstOrNull { it.userId == userId }?.position ?: 0,
-            badges          = gam.badges.map { it.toLocalBadge() },
-            history         = gam.history.map { it.toScoreEvent() },
-            rankingList     = ranking.map { it.toLocalRanking(userId) }
-        )
-    }
-}
-
-// ── Factory ────────────────────────────────────────────────────────────────────
-
-private class GamificationViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        GamificationViewModel(SessionManager(context), GamificationRepository(RetrofitClient.api)) as T
 }
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
@@ -357,7 +185,7 @@ internal fun GamificationContent(state: GamificationUiState) {
 
 @Composable
 private fun ProfileHeroSection(state: GamificationUiState) {
-    val lv = state.level
+    val lv = levelOf(state.points)
 
     Box(
         modifier = Modifier
@@ -477,7 +305,7 @@ private fun ProfileHeroSection(state: GamificationUiState) {
             Spacer(modifier = Modifier.height(20.dp))
 
             // Level progress
-            if (!state.isMaxLevel) {
+            if (lv.number != LEVEL_DEFS.size) {
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -488,7 +316,7 @@ private fun ProfileHeroSection(state: GamificationUiState) {
                         color = GabOnPrimary.copy(alpha = 0.75f)
                     )
                     Text(
-                        text       = "${state.ptsToNext} pts restantes",
+                        text       = "${pointsToNext(state.points)} pts restantes",
                         style      = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color      = GabYellow
@@ -496,7 +324,7 @@ private fun ProfileHeroSection(state: GamificationUiState) {
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 LinearProgressIndicator(
-                    progress   = { state.progress },
+                    progress   = { levelProgress(state.points) },
                     modifier   = Modifier
                         .fillMaxWidth()
                         .height(8.dp)

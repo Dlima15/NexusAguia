@@ -1,6 +1,5 @@
 package br.com.fiap.gabinova.ui.screens
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,11 +31,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,12 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import br.com.fiap.gabinova.model.UserRole
-import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.GabCard
 import br.com.fiap.gabinova.ui.components.PrimaryButton
 import br.com.fiap.gabinova.ui.components.ProgressCard
@@ -69,8 +59,9 @@ import br.com.fiap.gabinova.ui.theme.GabPrimaryContainer
 import br.com.fiap.gabinova.ui.theme.GabSurface
 import br.com.fiap.gabinova.ui.theme.GabTextDark
 import br.com.fiap.gabinova.ui.theme.GabYellow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
+import br.com.fiap.gabinova.ui.viewmodel.HomeUiState
+import br.com.fiap.gabinova.ui.viewmodel.HomeViewModel
+import br.com.fiap.gabinova.ui.viewmodel.HomeViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -85,77 +76,6 @@ data class HomeNavActions(
     val onNavigateToDashboard:    () -> Unit = {},
     val onNavigateToGamification: () -> Unit = {}
 )
-
-// ── UI State ──────────────────────────────────────────────────────────────────
-
-data class HomeUiState(
-    val userName: String   = "",
-    val userRole: UserRole = UserRole.COLLABORATOR,
-    // Operador
-    val myIdeasCount:      Int   = 5,
-    val points:            Int   = 320,
-    val ranking:           Int   = 12,
-    val level:             Int   = 3,
-    val levelName:         String = "Colaborador",
-    val levelProgress:     Float = 0.64f,
-    // Gestor
-    val pendingReviews:    Int   = 8,
-    val activeProjects:    Int   = 4,
-    val approvedThisMonth: Int   = 12,
-    val approvalGoal:      Int   = 20,
-    // Liderança
-    val totalIdeas:        Int   = 147,
-    val completedProjects: Int   = 23,
-    val engagementRate:    Int   = 78,
-    val quarterlyProgress: Float = 0.78f
-)
-
-// ── ViewModel ─────────────────────────────────────────────────────────────────
-
-class HomeViewModel(private val sessionManager: SessionManager) : ViewModel() {
-
-    var uiState by mutableStateOf(HomeUiState())
-        private set
-
-    init {
-        viewModelScope.launch {
-            combine(
-                sessionManager.userNameFlow,
-                sessionManager.userRoleFlow
-            ) { name, roleStr ->
-                val role = runCatching { UserRole.valueOf(roleStr) }
-                    .getOrDefault(UserRole.COLLABORATOR)
-                mockState(name, role)
-            }.collect { state -> uiState = state }
-        }
-    }
-
-    private fun mockState(name: String, role: UserRole) = when (role) {
-        UserRole.COLLABORATOR -> HomeUiState(
-            userName = name, userRole = role,
-            myIdeasCount = 5, points = 320, ranking = 12,
-            level = 3, levelName = "Colaborador", levelProgress = 0.64f
-        )
-        UserRole.MANAGER -> HomeUiState(
-            userName = name, userRole = role,
-            pendingReviews = 8, activeProjects = 4, approvedThisMonth = 12,
-            approvalGoal = 20
-        )
-        else -> HomeUiState(
-            userName = name, userRole = role,
-            totalIdeas = 147, completedProjects = 23,
-            engagementRate = 78, quarterlyProgress = 0.78f
-        )
-    }
-}
-
-// ── Factory ───────────────────────────────────────────────────────────────────
-
-private class HomeViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        HomeViewModel(SessionManager(context)) as T
-}
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -259,19 +179,19 @@ private fun StatsSection(state: HomeUiState) {
     ) {
         when (state.userRole) {
             UserRole.COLLABORATOR -> {
-                StatCard(value = "${state.myIdeasCount}",  label = "Minhas Ideias",  icon = Icons.Filled.Lightbulb,  iconTint = GabGreen,     modifier = Modifier.weight(1f))
-                StatCard(value = "${state.points}",        label = "Pontos",          icon = Icons.Filled.Star,       iconTint = GabYellow,    modifier = Modifier.weight(1f))
-                StatCard(value = "#${state.ranking}",      label = "Ranking",         icon = Icons.Filled.EmojiEvents,iconTint = GabLightBlue, modifier = Modifier.weight(1f))
+                StatCard(value = "${state.myIdeasCount}", label = "Minhas Ideias",  icon = Icons.Filled.Lightbulb,   iconTint = GabGreen,     modifier = Modifier.weight(1f))
+                StatCard(value = "${state.points}",       label = "Pontos",          icon = Icons.Filled.Star,        iconTint = GabYellow,    modifier = Modifier.weight(1f))
+                StatCard(value = "#${state.ranking}",     label = "Ranking",         icon = Icons.Filled.EmojiEvents, iconTint = GabLightBlue, modifier = Modifier.weight(1f))
             }
             UserRole.MANAGER -> {
-                StatCard(value = "${state.pendingReviews}", label = "Para Avaliar",   icon = Icons.Filled.Lightbulb,  iconTint = GabYellow,    modifier = Modifier.weight(1f))
-                StatCard(value = "${state.activeProjects}", label = "Projetos",        icon = Icons.Filled.Work,       iconTint = GabLightBlue, modifier = Modifier.weight(1f))
-                StatCard(value = "${state.approvedThisMonth}", label = "Aprovados",   icon = Icons.Filled.CheckCircle,iconTint = GabGreen,     modifier = Modifier.weight(1f))
+                StatCard(value = "${state.pendingReviews}",    label = "Para Avaliar", icon = Icons.Filled.Lightbulb,   iconTint = GabYellow,    modifier = Modifier.weight(1f))
+                StatCard(value = "${state.activeProjects}",    label = "Projetos",     icon = Icons.Filled.Work,        iconTint = GabLightBlue, modifier = Modifier.weight(1f))
+                StatCard(value = "${state.approvedThisMonth}", label = "Aprovados",    icon = Icons.Filled.CheckCircle, iconTint = GabGreen,     modifier = Modifier.weight(1f))
             }
             else -> {
-                StatCard(value = "${state.totalIdeas}",        label = "Ideias",       icon = Icons.Filled.Lightbulb,  iconTint = GabBlue,      modifier = Modifier.weight(1f))
-                StatCard(value = "${state.completedProjects}", label = "Projetos",     icon = Icons.Filled.Work,       iconTint = GabGreen,     modifier = Modifier.weight(1f))
-                StatCard(value = "${state.engagementRate}%",   label = "Engajamento",  icon = Icons.Filled.TrendingUp, iconTint = GabYellow,    modifier = Modifier.weight(1f))
+                StatCard(value = "${state.totalIdeas}",        label = "Ideias",       icon = Icons.Filled.Lightbulb,  iconTint = GabBlue,   modifier = Modifier.weight(1f))
+                StatCard(value = "${state.completedProjects}", label = "Projetos",     icon = Icons.Filled.Work,       iconTint = GabGreen,  modifier = Modifier.weight(1f))
+                StatCard(value = "${state.engagementRate}%",   label = "Engajamento",  icon = Icons.Filled.TrendingUp, iconTint = GabYellow, modifier = Modifier.weight(1f))
             }
         }
     }
@@ -401,11 +321,11 @@ private data class ShortcutItem(
 @Composable
 private fun QuickAccessSection(nav: HomeNavActions) {
     val shortcuts = listOf(
-        ShortcutItem(Icons.Filled.TrendingUp,  "Estratégias", GabBlue,                 onClick = nav.onNavigateToGuidelines),
-        ShortcutItem(Icons.Filled.Lightbulb,   "Ideias",      GabGreen,                onClick = nav.onNavigateToIdeas),
-        ShortcutItem(Icons.Filled.Work,        "Projetos",    GabLightBlue,            onClick = nav.onNavigateToProjects),
-        ShortcutItem(Icons.Filled.BarChart,    "Dashboard",   Color(0xFF6A1B9A),       onClick = nav.onNavigateToDashboard),
-        ShortcutItem(Icons.Filled.EmojiEvents, "Gamificação", GabYellow, GabTextDark,  onClick = nav.onNavigateToGamification)
+        ShortcutItem(Icons.Filled.TrendingUp,  "Estratégias", GabBlue,                onClick = nav.onNavigateToGuidelines),
+        ShortcutItem(Icons.Filled.Lightbulb,   "Ideias",      GabGreen,               onClick = nav.onNavigateToIdeas),
+        ShortcutItem(Icons.Filled.Work,        "Projetos",    GabLightBlue,           onClick = nav.onNavigateToProjects),
+        ShortcutItem(Icons.Filled.BarChart,    "Dashboard",   Color(0xFF6A1B9A),      onClick = nav.onNavigateToDashboard),
+        ShortcutItem(Icons.Filled.EmojiEvents, "Gamificação", GabYellow, GabTextDark, onClick = nav.onNavigateToGamification)
     )
 
     SectionTitle(title = "Acesso Rápido")
@@ -445,18 +365,18 @@ private fun ShortcutCard(item: ShortcutItem, modifier: Modifier = Modifier) {
                     .background(item.iconBg)
             ) {
                 Icon(
-                    imageVector = item.icon,
+                    imageVector        = item.icon,
                     contentDescription = item.label,
-                    tint = item.iconTint,
-                    modifier = Modifier.size(24.dp)
+                    tint               = item.iconTint,
+                    modifier           = Modifier.size(24.dp)
                 )
             }
             Text(
-                text = item.label,
-                style = MaterialTheme.typography.labelMedium,
+                text       = item.label,
+                style      = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = GabTextDark,
-                textAlign = TextAlign.Center
+                color      = GabTextDark,
+                textAlign  = TextAlign.Center
             )
         }
     }

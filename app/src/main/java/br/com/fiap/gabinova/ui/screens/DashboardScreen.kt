@@ -1,6 +1,5 @@
-package br.com.fiap.gabinova.ui.screens
+﻿package br.com.fiap.gabinova.ui.screens
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,9 +30,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,16 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import br.com.fiap.gabinova.data.remote.ApiResult
-import br.com.fiap.gabinova.data.remote.dto.DashboardDto
-import br.com.fiap.gabinova.data.remote.service.RetrofitClient
 import br.com.fiap.gabinova.model.UserRole
-import br.com.fiap.gabinova.repository.DashboardRepository
-import br.com.fiap.gabinova.session.SessionManager
 import br.com.fiap.gabinova.ui.components.SectionTitle
 import br.com.fiap.gabinova.ui.components.StatCard
 import br.com.fiap.gabinova.ui.theme.GabBackground
@@ -66,7 +54,10 @@ import br.com.fiap.gabinova.ui.theme.GabSurface
 import br.com.fiap.gabinova.ui.theme.GabSurfaceVariant
 import br.com.fiap.gabinova.ui.theme.GabTextDark
 import br.com.fiap.gabinova.ui.theme.GabYellow
-import kotlinx.coroutines.launch
+import br.com.fiap.gabinova.ui.viewmodel.DashboardData
+import br.com.fiap.gabinova.ui.viewmodel.DashboardUiState
+import br.com.fiap.gabinova.ui.viewmodel.DashboardViewModel
+import br.com.fiap.gabinova.ui.viewmodel.DashboardViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -96,106 +87,6 @@ private fun engagementColor(rate: Double) = when {
     rate >= 60.0 -> GabGreen
     rate >= 40.0 -> GabYellow
     else         -> GabError
-}
-
-// ── Data model ─────────────────────────────────────────────────────────────────
-
-data class DashboardData(
-    val totalIdeas: Int          = 47,
-    val approvedIdeas: Int       = 23,
-    val inReviewIdeas: Int       = 15,
-    val ideasThisMonth: Int      = 8,
-    val activeProjects: Int      = 4,
-    val completedProjects: Int   = 12,
-    val totalProjects: Int       = 16,
-    val totalInvestment: String  = "R\$ 345.000",
-    val financialReturn: String  = "R\$ 728.000",
-    val roi: Double              = 111.3,
-    val economyGenerated: String = "R\$ 92.000",
-    val productivityGain: String = "18%",
-    val engagedCollaborators: Int = 89,
-    val totalCollaborators: Int  = 120,
-    val engagementRate: Double   = 74.2,
-    val topGuideline: String     = "Eficiência Operacional"
-) {
-    val approvalRate: Double
-        get() = if (totalIdeas > 0) approvedIdeas.toDouble() / totalIdeas.toDouble() * 100 else 0.0
-
-    val completionRate: Double
-        get() = if (totalProjects > 0) completedProjects.toDouble() / totalProjects.toDouble() * 100 else 0.0
-
-    val engagementFraction: Float
-        get() = if (totalCollaborators > 0) engagedCollaborators.toFloat() / totalCollaborators.toFloat() else 0f
-}
-
-// ── UI State ───────────────────────────────────────────────────────────────────
-
-data class DashboardUiState(
-    val userRole:  UserRole      = UserRole.COLLABORATOR,
-    val data:      DashboardData = DashboardData(),
-    val isLoading: Boolean       = false,
-    val error:     String?       = null
-) {
-    val isLeadership get() = userRole == UserRole.ADMIN || userRole == UserRole.ANALYST
-    val isManager    get() = userRole == UserRole.MANAGER
-}
-
-private fun DashboardDto.toDashboardData() = DashboardData(
-    totalIdeas           = totalIdeas,
-    approvedIdeas        = approvedIdeas,
-    inReviewIdeas        = inReviewIdeas,
-    ideasThisMonth       = ideasThisMonth,
-    activeProjects       = activeProjects,
-    completedProjects    = completedProjects,
-    totalProjects        = totalProjects,
-    totalInvestment      = totalInvestment,
-    financialReturn      = financialReturn,
-    roi                  = roi,
-    economyGenerated     = economyGenerated,
-    productivityGain     = productivityGain,
-    engagedCollaborators = engagedCollaborators,
-    totalCollaborators   = totalCollaborators,
-    engagementRate       = engagementRate,
-    topGuideline         = topGuideline
-)
-
-// ── ViewModel ─────────────────────────────────────────────────────────────────
-
-class DashboardViewModel(
-    private val sessionManager: SessionManager,
-    private val dashboardRepository: DashboardRepository
-) : ViewModel() {
-
-    var state by mutableStateOf(DashboardUiState())
-        private set
-
-    init {
-        viewModelScope.launch {
-            sessionManager.userRoleFlow.collect { roleStr ->
-                val role = runCatching { UserRole.valueOf(roleStr) }.getOrDefault(UserRole.COLLABORATOR)
-                state = state.copy(userRole = role)
-            }
-        }
-        viewModelScope.launch { loadDashboard() }
-    }
-
-    fun retry() { viewModelScope.launch { loadDashboard() } }
-
-    private suspend fun loadDashboard() {
-        state = state.copy(isLoading = true, error = null)
-        when (val result = dashboardRepository.getDashboard()) {
-            is ApiResult.Success -> state = state.copy(isLoading = false, data = result.data.toDashboardData())
-            is ApiResult.Error   -> state = state.copy(isLoading = false, error = result.message)
-        }
-    }
-}
-
-// ── Factory ────────────────────────────────────────────────────────────────────
-
-private class DashboardViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T =
-        DashboardViewModel(SessionManager(context), DashboardRepository(RetrofitClient.api)) as T
 }
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
