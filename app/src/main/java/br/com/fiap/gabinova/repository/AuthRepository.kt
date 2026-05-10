@@ -1,5 +1,10 @@
 package br.com.fiap.gabinova.repository
 
+import br.com.fiap.gabinova.data.remote.ApiResult
+import br.com.fiap.gabinova.data.remote.api.ApiService
+import br.com.fiap.gabinova.data.remote.dto.LoginRequest
+import br.com.fiap.gabinova.data.remote.safeApiCall
+import br.com.fiap.gabinova.data.remote.service.TokenProvider
 import br.com.fiap.gabinova.model.User
 import br.com.fiap.gabinova.model.UserRole
 import br.com.fiap.gabinova.session.SessionManager
@@ -11,52 +16,56 @@ data class LoginResult(
     val errorMessage: String? = null
 )
 
-class AuthRepository(private val sessionManager: SessionManager) {
-
-    private data class Credential(
-        val password: String,
-        val role: UserRole,
-        val name: String
-    )
-
-    private val credentials = mapOf(
-        "operador@gab.com" to Credential("123456", UserRole.COLLABORATOR, "Operador Padrão"),
-        "gestor@gab.com"   to Credential("123456", UserRole.MANAGER,      "Gestor Regional"),
-        "lider@gab.com"    to Credential("123456", UserRole.ADMIN,        "Líder Estratégico")
-    )
+class AuthRepository(
+    private val sessionManager: SessionManager,
+    private val apiService: ApiService
+) {
 
     suspend fun login(email: String, password: String): LoginResult {
-        val credential = credentials[email.trim().lowercase()]
-            ?: return LoginResult(success = false, errorMessage = "E-mail não cadastrado.")
-
-        if (password != credential.password) {
-            return LoginResult(success = false, errorMessage = "Senha incorreta.")
+        val result = safeApiCall {
+            apiService.login(LoginRequest(email = email.trim(), password = password))
         }
 
-        val token  = "mock-token-${System.currentTimeMillis()}"
-        val userId = email.substringBefore("@")
+        return when (result) {
+            is ApiResult.Success -> {
+                val data = result.data
 
-        sessionManager.saveSession(
-            token    = token,
-            userId   = userId,
-            userName = credential.name,
-            userRole = credential.role.name,
-            email    = email
-        )
+                TokenProvider.token = data.token
 
-        return LoginResult(
-            success = true,
-            token   = token,
-            user    = User(
-                id         = userId,
-                name       = credential.name,
-                email      = email,
-                role       = credential.role,
-                department = "GAB Inova",
-                createdAt  = "2024-01-01T00:00:00Z"
+                val role = runCatching { UserRole.valueOf(data.userRole) }
+                    .getOrDefault(UserRole.COLLABORATOR)
+
+                sessionManager.saveSession(
+                    token    = data.token,
+                    userId   = data.userId,
+                    userName = data.userName,
+                    userRole = role.name,
+                    email    = data.email
+                )
+
+                LoginResult(
+                    success = true,
+                    token   = data.token,
+                    user    = User(
+                        id         = data.userId,
+                        name       = data.userName,
+                        email      = data.email,
+                        role       = role,
+                        department = "GAB Inova",
+                        createdAt  = ""
+                    )
+                )
+            }
+
+            is ApiResult.Error -> LoginResult(
+                success      = false,
+                errorMessage = result.message
             )
-        )
+        }
     }
 
-    suspend fun logout() = sessionManager.clearSession()
+    suspend fun logout() {
+        TokenProvider.token = ""
+        sessionManager.clearSession()
+    }
 }
