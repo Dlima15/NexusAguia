@@ -8,7 +8,7 @@ import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -80,7 +80,7 @@ data class GamificationUiState(
 private fun badgeIcon(name: String): ImageVector = when {
     name.contains("Primeira",     ignoreCase = true) -> Icons.Filled.Lightbulb
     name.contains("Aprovada",     ignoreCase = true) -> Icons.Filled.CheckCircle
-    name.contains("Impacto",      ignoreCase = true) -> Icons.Filled.TrendingUp
+    name.contains("Impacto",      ignoreCase = true) -> Icons.AutoMirrored.Filled.TrendingUp
     name.contains("Custo",        ignoreCase = true) -> Icons.Filled.Savings
     name.contains("Produtividade", ignoreCase = true)-> Icons.Filled.EmojiEvents
     name.contains("Inovador",     ignoreCase = true) -> Icons.Filled.Star

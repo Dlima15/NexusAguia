@@ -248,7 +248,7 @@ internal fun IdeasContent(
             // Status filter chips
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding        = PaddingValues(horizontal = 20.dp)
+                contentPadding        = PaddingValues(start = 20.dp, end = 20.dp)
             ) {
                 items(FILTER_STATUSES) { status ->
                     FilterChip(
@@ -283,7 +283,7 @@ internal fun IdeasContent(
                 }
             } else {
                 LazyColumn(
-                    contentPadding      = PaddingValues(horizontal = 16.dp, top = 4.dp, bottom = 88.dp),
+                    contentPadding      = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 88.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier            = Modifier.fillMaxSize()
                 ) {

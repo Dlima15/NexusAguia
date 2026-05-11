@@ -26,7 +26,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -286,7 +286,7 @@ internal fun ProjectsContent(
                     StatCard(
                         value    = "${state.inProgressCount}",
                         label    = "Em Andamento",
-                        icon     = Icons.Filled.TrendingUp,
+                        icon     = Icons.AutoMirrored.Filled.TrendingUp,
                         iconTint = GabGreen,
                         modifier = Modifier.weight(1f)
                     )
@@ -304,7 +304,7 @@ internal fun ProjectsContent(
             // Status filter chips
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding        = PaddingValues(horizontal = 20.dp)
+                contentPadding        = PaddingValues(start = 20.dp, end = 20.dp)
             ) {
                 items(FILTER_PROJECT_STATUSES) { status ->
                     FilterChip(
@@ -340,7 +340,7 @@ internal fun ProjectsContent(
                 }
             } else {
                 LazyColumn(
-                    contentPadding      = PaddingValues(horizontal = 16.dp, top = 4.dp, bottom = 88.dp),
+                    contentPadding      = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 88.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier            = Modifier.fillMaxSize()
                 ) {

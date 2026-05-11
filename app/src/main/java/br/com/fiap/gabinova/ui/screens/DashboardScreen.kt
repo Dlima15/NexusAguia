@@ -18,7 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -356,7 +356,7 @@ private fun ProjectsOverviewSection(data: DashboardData) {
         StatCard(
             value    = "${data.activeProjects}",
             label    = "Em Andamento",
-            icon     = Icons.Filled.TrendingUp,
+            icon     = Icons.AutoMirrored.Filled.TrendingUp,
             iconTint = Color(0xFFFF9800),
             modifier = Modifier.weight(1f)
         )

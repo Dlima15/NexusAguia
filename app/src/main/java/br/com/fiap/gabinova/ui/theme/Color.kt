@@ -74,3 +74,21 @@ val GabDarkOutlineVariant       = Color(0xFF44546A)
 val GabDarkInverseSurface       = Color(0xFFE2E2E5)
 val GabDarkInverseOnSurface     = Color(0xFF2F3133)
 val GabDarkInversePrimary       = Color(0xFF003B73)
+
+// ── Surface container hierarchy — Light ────────────────────────────────────────
+val GabSurfaceBright           = Color(0xFFFFFFFF)
+val GabSurfaceDim              = Color(0xFFD8DBE2)
+val GabSurfaceContainer        = Color(0xFFE8EEF5)   // mesma base que GabSurfaceVariant
+val GabSurfaceContainerHigh    = Color(0xFFDDE3EA)
+val GabSurfaceContainerHighest = Color(0xFFD0D6DD)
+val GabSurfaceContainerLow     = Color(0xFFF0F3F8)
+val GabSurfaceContainerLowest  = Color(0xFFFFFFFF)
+
+// ── Surface container hierarchy — Dark ────────────────────────────────────────
+val GabDarkSurfaceBright           = Color(0xFF37393C)
+val GabDarkSurfaceDim              = Color(0xFF111316)
+val GabDarkSurfaceContainer        = Color(0xFF1F2123)
+val GabDarkSurfaceContainerHigh    = Color(0xFF252829)
+val GabDarkSurfaceContainerHighest = Color(0xFF2F3133)
+val GabDarkSurfaceContainerLow     = GabDarkBackground   // 0xFF1A1C1E
+val GabDarkSurfaceContainerLowest  = Color(0xFF0D0F11)

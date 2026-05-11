@@ -22,7 +22,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -191,7 +191,7 @@ private fun StatsSection(state: HomeUiState) {
             else -> {
                 StatCard(value = "${state.totalIdeas}",        label = "Ideias",       icon = Icons.Filled.Lightbulb,  iconTint = GabBlue,   modifier = Modifier.weight(1f))
                 StatCard(value = "${state.completedProjects}", label = "Projetos",     icon = Icons.Filled.Work,       iconTint = GabGreen,  modifier = Modifier.weight(1f))
-                StatCard(value = "${state.engagementRate}%",   label = "Engajamento",  icon = Icons.Filled.TrendingUp, iconTint = GabYellow, modifier = Modifier.weight(1f))
+                StatCard(value = "${state.engagementRate}%",   label = "Engajamento",  icon = Icons.AutoMirrored.Filled.TrendingUp, iconTint = GabYellow, modifier = Modifier.weight(1f))
             }
         }
     }
@@ -304,7 +304,7 @@ private fun LiderancaSection(state: HomeUiState, nav: HomeNavActions) {
             Spacer(modifier = Modifier.height(12.dp))
             PrimaryButton(text = "Ver Dashboard Completo", onClick = nav.onNavigateToDashboard, icon = Icons.Filled.BarChart)
         }
-        PrimaryButton(text = "Ver Estratégias", onClick = nav.onNavigateToGuidelines, icon = Icons.Filled.TrendingUp)
+        PrimaryButton(text = "Ver Estratégias", onClick = nav.onNavigateToGuidelines, icon = Icons.AutoMirrored.Filled.TrendingUp)
     }
 }
 
@@ -321,7 +321,7 @@ private data class ShortcutItem(
 @Composable
 private fun QuickAccessSection(nav: HomeNavActions) {
     val shortcuts = listOf(
-        ShortcutItem(Icons.Filled.TrendingUp,  "Estratégias", GabBlue,                onClick = nav.onNavigateToGuidelines),
+        ShortcutItem(Icons.AutoMirrored.Filled.TrendingUp,  "Estratégias", GabBlue,                onClick = nav.onNavigateToGuidelines),
         ShortcutItem(Icons.Filled.Lightbulb,   "Ideias",      GabGreen,               onClick = nav.onNavigateToIdeas),
         ShortcutItem(Icons.Filled.Work,        "Projetos",    GabLightBlue,           onClick = nav.onNavigateToProjects),
         ShortcutItem(Icons.Filled.BarChart,    "Dashboard",   Color(0xFF6A1B9A),      onClick = nav.onNavigateToDashboard),

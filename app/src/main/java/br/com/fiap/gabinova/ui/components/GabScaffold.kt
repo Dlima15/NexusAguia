@@ -13,7 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -50,7 +50,7 @@ sealed class GabNavItem(
     val route: String
 ) {
     data object Home        : GabNavItem("Home",        Icons.Filled.Home,      "home")
-    data object Estrategias : GabNavItem("Estratégias", Icons.Filled.TrendingUp,"guidelines")
+    data object Estrategias : GabNavItem("Estratégias", Icons.AutoMirrored.Filled.TrendingUp,"guidelines")
     data object Ideias      : GabNavItem("Ideias",      Icons.Filled.Lightbulb, "ideas")
     data object Projetos    : GabNavItem("Projetos",    Icons.Filled.Work,      "projects")
     data object Dashboard   : GabNavItem("Dashboard",   Icons.Filled.BarChart,  "dashboard")

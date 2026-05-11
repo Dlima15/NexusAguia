@@ -23,7 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -221,7 +221,7 @@ internal fun GuidelinesContent(
             // ── Lista de orientações ─────────────────────────────────────
             if (state.filteredGuidelines.isEmpty()) {
                 EmptyState(
-                    icon    = Icons.Filled.TrendingUp,
+                    icon    = Icons.AutoMirrored.Filled.TrendingUp,
                     title   = "Nenhuma orientação encontrada",
                     message = if (state.isAdmin)
                         "Clique em + para criar a primeira orientação estratégica."
