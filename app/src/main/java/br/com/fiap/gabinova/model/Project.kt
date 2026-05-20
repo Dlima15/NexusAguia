@@ -3,11 +3,12 @@ package br.com.fiap.gabinova.model
 import com.google.gson.annotations.SerializedName
 
 enum class ProjectStatus {
-    @SerializedName("PLANNING")     PLANNING,
-    @SerializedName("IN_PROGRESS")  IN_PROGRESS,
-    @SerializedName("ON_HOLD")      ON_HOLD,
-    @SerializedName("COMPLETED")    COMPLETED,
-    @SerializedName("CANCELLED")    CANCELLED
+    @SerializedName("PLANNING")            PLANNING,
+    @SerializedName("AWAITING_APPROVAL")   AWAITING_APPROVAL,
+    @SerializedName("IN_PROGRESS")         IN_PROGRESS,
+    @SerializedName("ON_HOLD")             ON_HOLD,
+    @SerializedName("COMPLETED")           COMPLETED,
+    @SerializedName("CANCELLED")           CANCELLED
 }
 
 data class Project(
