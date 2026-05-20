@@ -1,7 +1,7 @@
 # 
 <div align="center">
 
-![Nexus Águia](https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=48&duration=3000&pause=2000&color=1E88E5&center=true&vCenter=true&width=600&lines=Nexus+Águia;Gestão+de+Inovação+Corporativa;Transformando+Ideias+em+Resultados)
+![Nexus Águia](https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=45&duration=3000&pause=2000&color=1E88E5&center=true&vCenter=true&width=900&lines=Nexus+Águia;Gestão+de+Inovação+Corporativa;Transformando+Ideias+em+Resultados)
 
 ---
 
