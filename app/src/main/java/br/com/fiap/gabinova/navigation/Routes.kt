@@ -9,4 +9,6 @@ object Routes {
     const val PROJECTS     = "projects"
     const val DASHBOARD    = "dashboard"
     const val GAMIFICATION = "gamification"
+
+    const val PROFILE      = "profile"
 }
