@@ -1,270 +1,375 @@
-# Nexus Águia
+# 
+<div align="center">
 
-## Sobre o Projeto
-
-O Nexus Águia é uma plataforma corporativa de gestão da inovação desenvolvida para o Grupo Águia Branca.
-
-A solução conecta estratégia, ideias, projetos e resultados, permitindo que colaboradores participem ativamente do ecossistema de inovação da empresa de forma organizada, segura e alinhada aos objetivos estratégicos do negócio.
-
-O sistema foi desenvolvido com foco em inovação organizacional, engajamento corporativo e geração de valor real para a empresa.
+![Nexus Águia](https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=48&duration=3000&pause=2000&color=1E88E5&center=true&vCenter=true&width=600&lines=Nexus+Águia;Gestão+de+Inovação+Corporativa;Transformando+Ideias+em+Resultados)
 
 ---
 
-# Objetivo
+[![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+[![Android](https://img.shields.io/badge/Android-14+-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Latest-4285F4?style=for-the-badge&logo=jetpack&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![FIAP](https://img.shields.io/badge/FIAP%20Challenge-Partner-blue?style=for-the-badge&logoColor=white)](#sobre-o-projeto)
+[![Licença](https://img.shields.io/badge/Licença-Educacional-green?style=for-the-badge)](#licença)
+[![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-yellow?style=for-the-badge)](#)
 
-Transformar ideias operacionais em projetos estratégicos capazes de gerar impacto real, produtividade, economia, eficiência operacional e inovação organizacional.
-
-O Nexus Águia busca fortalecer a cultura de inovação dentro da empresa, conectando todos os níveis organizacionais em um único ecossistema colaborativo.
-
----
-
-# Diferencial da Solução
-
-O Nexus Águia não atua apenas como um aplicativo de cadastro de ideias.
-
-A plataforma conecta estratégia, execução e resultados, permitindo transformar sugestões operacionais em projetos estratégicos acompanhados por indicadores executivos, ROI, produtividade, economia gerada e engajamento corporativo.
+</div>
 
 ---
 
-# Perfis de Usuário
+## 📋 Sobre o Projeto
 
-## Operador / Colaborador
+O **Nexus Águia** é uma plataforma corporativa de gestão da inovação desenvolvida para o Grupo Águia Branca, em parceria com a FIAP como projeto acadêmico de excelência.
 
-Responsável por:
-- consultar estratégias da empresa;
-- cadastrar ideias;
-- acompanhar status das ideias;
-- participar da gamificação corporativa.
+A solução conecta **estratégia, ideias, projetos e resultados**, permitindo que colaboradores participem ativamente do ecossistema de inovação da empresa de forma organizada, segura e alinhada aos objetivos estratégicos do negócio.
 
-### Funcionalidades:
-- Cadastro de ideias
-- Acompanhamento das sugestões
-- Gamificação
-- Ranking de inovação
-- Sistema de recompensas
+### 🎯 Objetivo Principal
+
+Transformar ideias operacionais em projetos estratégicos capazes de gerar:
+- 💰 **Impacto real** em produtividade
+- 📊 **Economia** operacional
+- ⚡ **Eficiência** de processos
+- 🚀 **Inovação** organizacional
+- 👥 **Engajamento** corporativo
 
 ---
 
-## Gestor
+## ✨ Diferenciais da Solução
 
-Responsável por:
-- avaliar ideias;
-- priorizar sugestões;
-- transformar ideias em projetos;
-- acompanhar resultados operacionais.
+Ao contrário de simples aplicativos de cadastro de ideias, o Nexus Águia oferece uma **solução completa**:
 
-### Funcionalidades:
-- Avaliação de ideias
-- Priorização
-- Gestão de projetos
-- Atualização de progresso
-- Controle operacional
+- ✅ Conecta estratégia, execução e resultados
+- ✅ Transforma sugestões operacionais em projetos estratégicos
+- ✅ Acompanha indicadores executivos, ROI e produtividade
+- ✅ Gamificação corporativa com recompensas reais
+- ✅ Dashboard executivo com métricas estratégicas
+- ✅ Controle de acesso por perfil organizacional
 
 ---
 
-## Liderança
+## 🎮 Demo & Screenshots
 
-Responsável por:
-- acompanhar indicadores estratégicos;
-- monitorar resultados;
-- analisar ROI e produtividade;
-- gerenciar estratégias organizacionais.
+<div align="center">
 
-### Funcionalidades:
-- Dashboard executivo
-- Indicadores estratégicos
-- ROI e produtividade
-- Gestão de estratégias
-- Acompanhamento de projetos
+| Tela | Descrição |
+|------|-----------|
+| 🔐 Login | Autenticação corporativa segura |
+| 🏠 Home | Dashboard personalizado por perfil |
+| 💡 Ideias | Cadastro e acompanhamento de sugestões |
+| 📈 Projetos | Gestão de projetos com indicadores |
+| 📊 Dashboard | Métricas estratégicas executivas |
+| 🎯 Gamificação | Ranking e sistema de recompensas |
+| 👤 Perfil | Gestão de dados do usuário |
 
----
-
-# Funcionalidades do Sistema
-
-- Login corporativo
-- Controle de acesso por perfil
-- Sessão autenticada
-- Gestão de estratégias
-- Cadastro de ideias
-- Gestão de projetos
-- Dashboard executivo
-- Gamificação corporativa
-- Ranking de inovação
-- Sistema de recompensas
-- Área de perfil do usuário
-- Navegação dinâmica por perfil
-- Logout seguro
+</div>
 
 ---
 
-# Estrutura do Aplicativo
+## 🚀 Funcionalidades Principais
 
-- Splash Screen
-- Login Screen
-- Home Screen
-- Strategic Guidelines Screen
-- Ideas Screen
-- Projects Screen
-- Dashboard Screen
-- Gamification Screen
-- Profile Screen
+### Para Colaboradores (Operadores)
+- 💼 Consultar estratégias da empresa
+- 💡 Cadastrar e acompanhar ideias
+- 🏆 Participar de gamificação corporativa
+- 📊 Visualizar ranking de inovação
+- 🎁 Acessar sistema de recompensas
 
----
+### Para Gestores
+- ✅ Avaliar e priorizar ideias
+- 📋 Transformar ideias em projetos
+- 📈 Acompanhar progresso operacional
+- 🎯 Controlar execução de projetos
+- 📊 Analisar resultados em tempo real
 
-# Arquitetura Utilizada
-
-O projeto utiliza arquitetura MVVM (Model-View-ViewModel), promovendo separação de responsabilidades, organização do código e escalabilidade da aplicação.
-
-### Estrutura principal:
-- UI (Jetpack Compose)
-- ViewModels
-- Repositories
-- SessionManager
-- Navigation Compose
-- Retrofit
-- DataStore
+### Para Liderança
+- 📊 Dashboard executivo avançado
+- 📈 Indicadores estratégicos em tempo real
+- 💹 Análise de ROI e produtividade
+- 🔐 Gestão de estratégias organizacionais
+- 📉 Relatórios de acompanhamento
 
 ---
 
-# Tecnologias Utilizadas
+## 🛠️ Stack Tecnológica
 
-- Kotlin
-- Jetpack Compose
-- Material Design 3
-- Navigation Compose
-- ViewModel
-- Retrofit
-- Gson
-- DataStore
-- Coroutines
-- MVVM Architecture
+<div align="center">
 
----
+![Kotlin](https://skillicons.dev/icons?i=kotlin)
+![Gradle](https://skillicons.dev/icons?i=gradle)
+![Android](https://skillicons.dev/icons?i=android)
 
-# Controle de Acesso
+</div>
 
-O sistema possui autenticação corporativa baseada em níveis organizacionais.
-
-Os usuários são previamente cadastrados pela empresa/RH, garantindo segurança e controle de permissões dentro da plataforma.
-
-Cada perfil possui acesso apenas às funcionalidades compatíveis com sua responsabilidade organizacional.
-
----
-
-# Gamificação Corporativa
-
-O Nexus Águia possui um sistema de gamificação com foco em engajamento organizacional.
-
-Os colaboradores acumulam pontos conforme:
-- envio de ideias;
-- aprovação de sugestões;
-- participação em projetos;
-- impacto gerado para a empresa.
-
-### Recompensas:
-- Meio período de folga
-- 1 dia de folga
-- Passagem Águia Branca
-- Reconhecimento executivo
+| Tecnologia | Descrição |
+|---|---|
+| **Kotlin** | Linguagem de programação principal |
+| **Jetpack Compose** | UI moderna e declarativa |
+| **Material Design 3** | Design system do Android |
+| **MVVM Architecture** | Arquitetura escalável e testável |
+| **Navigation Compose** | Navegação declarativa |
+| **ViewModel** | Gerenciamento de estado |
+| **Retrofit** | Client HTTP para APIs REST |
+| **Gson** | Serialização JSON |
+| **DataStore** | Persistência de dados local |
+| **Coroutines** | Programação assíncrona |
 
 ---
 
-# Indicadores Estratégicos
+## 📚 Arquitetura MVVM
 
-O dashboard executivo permite acompanhar:
-- ROI
-- Economia gerada
-- Ganho de produtividade
-- Projetos ativos
-- Projetos concluídos
-- Engajamento organizacional
-- Ideias aprovadas
-- Taxa de implementação
+O projeto segue a arquitetura **MVVM (Model-View-ViewModel)**, promovendo:
+- ✅ Separação clara de responsabilidades
+- ✅ Código testável e reutilizável
+- ✅ Escalabilidade para crescimento
+- ✅ Manutenção simplificada
 
----
-
-# Como Executar o Projeto
-
-## Requisitos
-
-- Android Studio
-- JDK 11+
-- Gradle
-- Emulador Android ou dispositivo físico
-
----
-
-## Passo a Passo
-
-1. Clone o repositório:
-
-```bash
-git clone URL_DO_REPOSITORIO
+```
+┌─────────────┐
+│     UI      │  (Jetpack Compose)
+└──────┬──────┘
+       │
+┌──────▼──────────┐
+│  ViewModels     │  (Lógica de negócio)
+└──────┬──────────┘
+       │
+┌──────▼──────────┐
+│ Repositories    │  (Dados)
+└──────┬──────────┘
+       │
+┌──────▼──────────┐
+│  APIs / Cache   │  (Retrofit, DataStore)
+└─────────────────┘
 ```
 
-2. Abra o projeto no Android Studio.
+---
 
-3. Aguarde a sincronização do Gradle.
+## 🔐 Controle de Acesso
 
-4. Execute em:
-- emulador Android;
-- ou dispositivo físico.
+O sistema possui **autenticação corporativa** baseada em níveis organizacionais:
+
+- ✅ Usuários pré-cadastrados pela RH
+- ✅ Segurança garantida por perfis
+- ✅ Permissões personalizadas por papel
+- ✅ Sessão autenticada e segura
+- ✅ Logout seguro
+
+| Perfil | Acesso |
+|--------|--------|
+| **Operador** | Cadastro de ideias, gamificação, ranking |
+| **Gestor** | Avaliação, priorização, gestão de projetos |
+| **Liderança** | Dashboard executivo, indicadores estratégicos |
 
 ---
 
-# Logins de Teste
+## 🎯 Indicadores Estratégicos
+
+O dashboard executivo monitora em tempo real:
+
+- 💹 **ROI** de projetos implementados
+- 💰 **Economia** gerada
+- ⚡ **Ganho de produtividade**
+- 📊 Número de **projetos ativos** e **concluídos**
+- 👥 **Engajamento organizacional**
+- ✅ **Taxa de implementação** de ideias
+- 📈 **Ideias aprovadas** e em andamento
+
+---
+
+## 🎮 Gamificação Corporativa
+
+O Nexus Águia possui um sistema de gamificação com foco em **engajamento organizacional**:
+
+### Sistema de Pontos
+Os colaboradores acumulam pontos por:
+- 💡 Envio de ideias aprovadas
+- ✅ Aprovação de sugestões
+- 📋 Participação em projetos
+- 🎯 Impacto gerado para a empresa
+
+### Recompensas
+- 🌴 Meio período de folga
+- 🎉 1 dia de folga
+- ✈️ Passagem Águia Branca
+- 🏆 Reconhecimento executivo
+
+---
+
+## 🏃 Como Rodar Localmente
+
+### ✅ Requisitos
+
+- **Android Studio** (versão recent)
+- **JDK 11+**
+- **Gradle** (incluído no Android Studio)
+- **Emulador Android** ou **dispositivo físico** com Android 14+
+
+### 📝 Passo a Passo
+
+**1. Clone o repositório:**
+```bash
+git clone https://github.com/Dlima15/NexusAguia.git
+cd NexusAguia
+```
+
+**2. Abra no Android Studio:**
+```bash
+# Se tiver Android Studio instalado
+open -a "Android Studio" .
+# ou simplesmente arraste a pasta para o Android Studio
+```
+
+**3. Sincronize o Gradle:**
+- Aguarde a sincronização automática
+- Caso não sincronize, clique em: `File > Sync Now`
+
+**4. Configure o emulador ou conecte um dispositivo:**
+```bash
+# Verificar dispositivos conectados
+adb devices
+
+# Listar emuladores disponíveis
+emulator -list-avds
+```
+
+**5. Execute o projeto:**
+```bash
+# Via Android Studio: Shift + F10 (Windows) ou Cmd + R (Mac)
+# Ou clique em "Run" > "Run 'app'"
+```
+
+---
+
+## 🧪 Logins de Teste
+
+Use estas credenciais para testar os diferentes perfis:
 
 | Perfil | E-mail | Senha |
-|---|---|---|
-| Operador | operador@gab.com | 123456 |
-| Gestor | gestor@gab.com | 123456 |
-| Liderança | lideranca@gab.com | 123456 |
+|--------|--------|-------|
+| **Operador** | `operador@gab.com` | `123456` |
+| **Gestor** | `gestor@gab.com` | `123456` |
+| **Liderança** | `lideranca@gab.com` | `123456` |
 
 ---
 
-# Estrutura Estratégica da Solução
+## 📁 Estrutura de Pastas
 
-O Nexus Águia conecta:
+```
+NexusAguia/
+├── app/
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/com/example/nexusaguia/
+│   │   │   │   ├── ui/              # Telas e componentes Compose
+│   │   │   │   ├── viewmodel/       # ViewModels
+│   │   │   │   ├── repository/      # Repositórios
+│   │   │   │   ├── model/           # Modelos de dados
+│   │   │   │   ├── network/         # APIs Retrofit
+│   │   │   │   ├── session/         # SessionManager
+│   │   │   │   └── navigation/      # Navegação Compose
+│   │   │   └── res/
+│   │   │       ├── drawable/        # Imagens e drawables
+│   │   │       ├── values/          # Strings, cores, temas
+│   │   │       └── layout/          # Layouts XML (se houver)
+│   │   └── test/
+│   ├── build.gradle.kts             # Dependências do app
+│   └── AndroidManifest.xml          # Manifest Android
+├── build.gradle.kts                 # Gradle raiz
+├── settings.gradle.kts              # Configurações Gradle
+└── README.md                        # Este arquivo
 
-```text
-Estratégia
-↓
-Ideias
-↓
-Projetos
-↓
-Resultados
 ```
 
-Permitindo transformar inovação em valor real para o negócio.
+---
+
+## 👥 Estrutura Estratégica
+
+O Nexus Águia conecta toda a cadeia de inovação:
+
+```
+ESTRATÉGIA
+    ↓
+  IDEIAS (Cadastro de sugestões)
+    ↓
+ PROJETOS (Transformação em iniciativas)
+    ↓
+RESULTADOS (Indicadores e ROI)
+```
+
+Permitindo transformar inovação em **valor real** para o negócio.
 
 ---
 
-# Projeto Acadêmico
+## 🤝 Contribuidores
 
-Projeto desenvolvido para o Challenge FIAP em parceria com o Grupo Águia Branca.
+<div align="center">
+
+### Time Principal
+
+</div>
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/aryhemerich">
+        <img src="https://github.com/aryhemerich.png" width="100px" alt="Ariane Hemerich"/><br/>
+        <sub><b>Ariane Hemerich</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/dlcruzz">
+        <img src="https://github.com/dlcruzz.png" width="100px" alt="Danilo Cruz"/><br/>
+        <sub><b>Danilo Cruz</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/PauloAugSiqueira">
+        <img src="https://github.com/PauloAugSiqueira.png" width="100px" alt="Paulo Augusto"/><br/>
+        <sub><b>Paulo Augusto Siqueira</b></sub>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/Diacis1988">
+        <img src="https://github.com/Diacis1988.png" width="100px" alt="Amanda Diacis"/><br/>
+        <sub><b>Amanda Diacis</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/azrlsli">
+        <img src="https://github.com/azrlsli.png" width="100px" alt="Ariel de Souza"/><br/>
+        <sub><b>Ariel de Souza Lima</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
 
 ---
 
-# Integrantes
+## 📜 Licença
 
-- Ariane Hemerich
-- Danilo Lima Cruz
-- Paulo Augusto Siqueira
-- Amanda do Nascimento Diacis
-- Ariel de Souza Lima
+Projeto acadêmico desenvolvido exclusivamente para fins educacionais em parceria com:
+- 🏫 **FIAP** - Faculdade de Informática e Administração Paulista
+- 🚌 **Grupo Águia Branca** - Empresa parceira
 
----
-
-# Contributors
-
-- `aryhemerich`
-- `azrlsli`
-- `Diacis1988`
-- `PauloAugSiqueira`
+Este projeto é fornecido "como está" para fins educacionais e de demonstração. Consulte a licença completa para mais detalhes sobre as restrições de uso.
 
 ---
 
-# Licença
+## 📧 Contato & Links
 
-Projeto acadêmico desenvolvido exclusivamente para fins educacionais.
+<div align="center">
+
+**Desenvolvido com ❤️ para a inovação corporativa**
+
+[![GitHub](https://img.shields.io/badge/GitHub-NexusAguia-181717?style=for-the-badge&logo=github)](https://github.com/Dlima15/NexusAguia)
+[![Issues](https://img.shields.io/badge/Issues-Report%20Bug-red?style=for-the-badge)](https://github.com/Dlima15/NexusAguia/issues)
+
+</div>
+
+---
+
+<div align="center">
+
+### Obrigado por usar o Nexus Águia! 🦅
+
+</div>
