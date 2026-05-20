@@ -43,9 +43,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,8 +76,6 @@ import br.com.fiap.gabinova.ui.viewmodel.IdeasUiState
 import br.com.fiap.gabinova.ui.viewmodel.IdeasViewModel
 import br.com.fiap.gabinova.ui.viewmodel.IdeasViewModelFactory
 
-// ── Constants & helpers ────────────────────────────────────────────────────────
-
 private val FILTER_STATUSES: List<IdeaStatus?> = listOf(
     null,
     IdeaStatus.PENDING,
@@ -91,71 +86,91 @@ private val FILTER_STATUSES: List<IdeaStatus?> = listOf(
 )
 
 private fun urgencyLabel(urgency: Int) = when (urgency) {
-    1    -> "Baixa"
-    2    -> "Média"
-    3    -> "Normal"
-    4    -> "Alta"
-    5    -> "Crítica"
+    1 -> "Baixa"
+    2 -> "Média"
+    3 -> "Normal"
+    4 -> "Alta"
+    5 -> "Crítica"
     else -> ""
 }
 
 private fun urgencyColor(urgency: Int) = when (urgency) {
-    1    -> GabGreen
-    2    -> Color(0xFF8BC34A)
-    3    -> GabYellow
-    4    -> Color(0xFFFF9800)
-    5    -> GabError
+    1 -> GabGreen
+    2 -> Color(0xFF8BC34A)
+    3 -> GabYellow
+    4 -> Color(0xFFFF9800)
+    5 -> GabError
     else -> GabOnSurfaceVariant
 }
 
 private fun urgencyContentColor(urgency: Int) = when (urgency) {
-    3    -> GabTextDark
+    3 -> GabTextDark
     else -> Color.White
 }
 
 private fun statusToGabStatus(status: IdeaStatus) = when (status) {
-    IdeaStatus.PENDING     -> GabStatus.PENDENTE
-    IdeaStatus.IN_REVIEW   -> GabStatus.EM_ANALISE
-    IdeaStatus.APPROVED    -> GabStatus.APROVADO
-    IdeaStatus.REJECTED    -> GabStatus.REJEITADO
+    IdeaStatus.PENDING -> GabStatus.PENDENTE
+    IdeaStatus.IN_REVIEW -> GabStatus.EM_ANALISE
+    IdeaStatus.APPROVED -> GabStatus.APROVADO
+    IdeaStatus.REJECTED -> GabStatus.REJEITADO
     IdeaStatus.IMPLEMENTED -> GabStatus.CONCLUIDO
 }
 
 private fun statusFilterLabel(status: IdeaStatus?) = when (status) {
-    null                   -> "Todas"
-    IdeaStatus.PENDING     -> "Pendente"
-    IdeaStatus.IN_REVIEW   -> "Em Análise"
-    IdeaStatus.APPROVED    -> "Aprovado"
-    IdeaStatus.REJECTED    -> "Rejeitado"
+    null -> "Todas"
+    IdeaStatus.PENDING -> "Pendente"
+    IdeaStatus.IN_REVIEW -> "Em Análise"
+    IdeaStatus.APPROVED -> "Aprovado"
+    IdeaStatus.REJECTED -> "Rejeitado"
     IdeaStatus.IMPLEMENTED -> "Implementado"
 }
 
-// ── Screen ─────────────────────────────────────────────────────────────────────
+private fun priorityLabel(score: Int): String = when {
+    score >= 80 -> "Alta Prioridade Estratégica"
+    score >= 50 -> "Prioridade Moderada"
+    else -> "Baixa Prioridade Estratégica"
+}
+
+private fun priorityColor(score: Int): Color = when {
+    score >= 80 -> GabGreen
+    score >= 50 -> GabBlue
+    else -> GabOnSurfaceVariant
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IdeasScreen() {
-    val context    = LocalContext.current
+    val context = LocalContext.current
     val vm: IdeasViewModel = viewModel(factory = IdeasViewModelFactory(context))
-    val state      = vm.state
+    val state = vm.state
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     when {
         state.isLoading -> Box(
-            modifier         = Modifier.fillMaxSize().background(GabBackground),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(GabBackground),
             contentAlignment = Alignment.Center
-        ) { androidx.compose.material3.CircularProgressIndicator(color = GabBlue) }
+        ) {
+            androidx.compose.material3.CircularProgressIndicator(color = GabBlue)
+        }
 
         state.error != null -> Box(
-            modifier         = Modifier.fillMaxSize().background(GabBackground).padding(24.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(GabBackground)
+                .padding(24.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(state.error!!, color = GabError)
                 Spacer(Modifier.height(16.dp))
-                Button(onClick = vm::retry,
+                Button(
+                    onClick = vm::retry,
                     colors = ButtonDefaults.buttonColors(containerColor = GabBlue)
-                ) { Text("Tentar novamente", color = Color.White) }
+                ) {
+                    Text("Tentar novamente", color = Color.White)
+                }
             }
         }
 
@@ -163,36 +178,34 @@ fun IdeasScreen() {
             if (state.isFormVisible) {
                 ModalBottomSheet(
                     onDismissRequest = vm::hideForm,
-                    sheetState       = sheetState,
-                    containerColor   = GabSurface
+                    sheetState = sheetState,
+                    containerColor = GabSurface
                 ) {
                     IdeaFormSheet(
-                        state                  = state,
-                        onTitleChange          = vm::onTitleChange,
-                        onDescriptionChange    = vm::onDescriptionChange,
-                        onSectorChange         = vm::onSectorChange,
-                        onCategoryChange       = vm::onCategoryChange,
+                        state = state,
+                        onTitleChange = vm::onTitleChange,
+                        onDescriptionChange = vm::onDescriptionChange,
+                        onSectorChange = vm::onSectorChange,
+                        onCategoryChange = vm::onCategoryChange,
                         onExpectedImpactChange = vm::onExpectedImpactChange,
-                        onUrgencyChange        = vm::onUrgencyChange,
-                        onSave                 = vm::saveIdea,
-                        onCancel               = vm::hideForm
+                        onUrgencyChange = vm::onUrgencyChange,
+                        onSave = vm::saveIdea,
+                        onCancel = vm::hideForm
                     )
                 }
             }
 
             IdeasContent(
-                state          = state,
+                state = state,
                 onStatusFilter = vm::onStatusFilter,
-                onAddClick     = vm::showCreateForm,
-                onApprove      = vm::approveIdea,
-                onReject       = vm::rejectIdea,
-                onPrioritize   = vm::prioritizeIdea
+                onAddClick = vm::showCreateForm,
+                onApprove = vm::approveIdea,
+                onReject = vm::rejectIdea,
+                onPrioritize = vm::prioritizeIdea
             )
         }
     }
 }
-
-// ── Content ────────────────────────────────────────────────────────────────────
 
 @Composable
 internal fun IdeasContent(
@@ -209,55 +222,65 @@ internal fun IdeasContent(
             .background(GabBackground)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-
-            // Header
             Row(
-                modifier              = Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalAlignment     = Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = when {
-                        state.isCollaborator -> "Minhas Ideias"
-                        state.isManager      -> "Ideias Recebidas"
-                        else                 -> "Consulta de Ideias"
-                    },
-                    style      = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color      = GabTextDark
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = when {
+                            state.isCollaborator -> "Minhas Ideias"
+                            state.isManager -> "Ideias Recebidas"
+                            else -> "Consulta de Ideias"
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = GabTextDark
+                    )
+
+                    Text(
+                        text = when {
+                            state.isCollaborator -> "Transforme desafios operacionais em inovação com impacto real."
+                            state.isManager -> "Priorize ideias com maior potencial estratégico."
+                            else -> "Acompanhe ideias conectadas à estratégia do Grupo."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = GabOnSurfaceVariant
+                    )
+                }
+
                 if (state.visibleIdeas.isNotEmpty()) {
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier         = Modifier
+                        modifier = Modifier
                             .background(GabBlue, RoundedCornerShape(50))
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text       = "${state.visibleIdeas.size}",
-                            style      = MaterialTheme.typography.labelMedium,
+                            text = "${state.visibleIdeas.size}",
+                            style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color      = Color.White
+                            color = Color.White
                         )
                     }
                 }
             }
 
-            // Status filter chips
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding        = PaddingValues(start = 20.dp, end = 20.dp)
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp)
             ) {
                 items(FILTER_STATUSES) { status ->
                     FilterChip(
                         selected = state.selectedStatus == status,
-                        onClick  = { onStatusFilter(status) },
-                        label    = { Text(statusFilterLabel(status)) },
-                        colors   = FilterChipDefaults.filterChipColors(
+                        onClick = { onStatusFilter(status) },
+                        label = { Text(statusFilterLabel(status)) },
+                        colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = GabBlue,
-                            selectedLabelColor     = Color.White
+                            selectedLabelColor = Color.White
                         )
                     )
                 }
@@ -267,14 +290,14 @@ internal fun IdeasContent(
 
             if (state.visibleIdeas.isEmpty()) {
                 Box(
-                    modifier         = Modifier
+                    modifier = Modifier
                         .fillMaxSize()
                         .padding(bottom = 72.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     EmptyState(
-                        icon    = Icons.Filled.Lightbulb,
-                        title   = "Nenhuma ideia encontrada",
+                        icon = Icons.Filled.Lightbulb,
+                        title = "Nenhuma ideia encontrada",
                         message = if (state.isCollaborator)
                             "Toque em \"Nova Ideia\" para compartilhar sua primeira sugestão!"
                         else
@@ -283,16 +306,16 @@ internal fun IdeasContent(
                 }
             } else {
                 LazyColumn(
-                    contentPadding      = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 88.dp),
+                    contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 88.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier            = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     items(state.visibleIdeas, key = { it.id }) { idea ->
                         IdeaCard(
-                            idea         = idea,
-                            showActions  = state.isManager,
-                            onApprove    = { onApprove(idea.id) },
-                            onReject     = { onReject(idea.id) },
+                            idea = idea,
+                            showActions = state.isManager,
+                            onApprove = { onApprove(idea.id) },
+                            onReject = { onReject(idea.id) },
                             onPrioritize = { onPrioritize(idea.id) }
                         )
                     }
@@ -300,23 +323,20 @@ internal fun IdeasContent(
             }
         }
 
-        // FAB — Operador only
         if (state.isCollaborator) {
             ExtendedFloatingActionButton(
-                text           = { Text("Nova Ideia") },
-                icon           = { Icon(Icons.Default.Add, contentDescription = null) },
-                onClick        = onAddClick,
+                text = { Text("Nova Ideia") },
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                onClick = onAddClick,
                 containerColor = GabBlue,
-                contentColor   = Color.White,
-                modifier       = Modifier
+                contentColor = Color.White,
+                modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(20.dp)
             )
         }
     }
 }
-
-// ── IdeaCard ───────────────────────────────────────────────────────────────────
 
 @Composable
 private fun IdeaCard(
@@ -329,12 +349,11 @@ private fun IdeaCard(
     val canAct = showActions && (idea.status == IdeaStatus.PENDING || idea.status == IdeaStatus.IN_REVIEW)
 
     Card(
-        modifier  = Modifier.fillMaxWidth(),
-        colors    = CardDefaults.cardColors(containerColor = GabSurface),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = GabSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape     = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.medium
     ) {
-        // Urgency color strip
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -343,29 +362,29 @@ private fun IdeaCard(
         )
 
         Column(modifier = Modifier.padding(16.dp)) {
-
-            // Status + score
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 StatusChip(status = statusToGabStatus(idea.status))
+
                 Row(
-                    verticalAlignment     = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Icon(
-                        imageVector        = Icons.Filled.Star,
+                        imageVector = Icons.Filled.Star,
                         contentDescription = null,
-                        tint               = GabYellow,
-                        modifier           = Modifier.size(14.dp)
+                        tint = GabYellow,
+                        modifier = Modifier.size(14.dp)
                     )
+
                     Text(
-                        text       = "${idea.score} pts",
-                        style      = MaterialTheme.typography.labelSmall,
+                        text = "Nexus Score ${idea.score}",
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
-                        color      = GabTextDark
+                        color = GabTextDark
                     )
                 }
             }
@@ -373,18 +392,19 @@ private fun IdeaCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text       = idea.title,
-                style      = MaterialTheme.typography.titleSmall,
+                text = idea.title,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color      = GabTextDark
+                color = GabTextDark
             )
 
             if (idea.description.isNotBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
-                    text     = idea.description,
-                    style    = MaterialTheme.typography.bodySmall,
-                    color    = GabOnSurfaceVariant,
+                    text = idea.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = GabOnSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -392,7 +412,6 @@ private fun IdeaCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Meta chips
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 MetaChip(label = idea.sector)
                 MetaChip(label = idea.category)
@@ -401,17 +420,33 @@ private fun IdeaCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            Text(
+                text = priorityLabel(idea.score),
+                style = MaterialTheme.typography.labelSmall,
+                color = priorityColor(idea.score),
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Text(
+                text = "Alinhada à estratégia: ${idea.category}",
+                style = MaterialTheme.typography.labelSmall,
+                color = GabOnSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text  = "Por ${idea.authorName}",
+                    text = "Por ${idea.authorName}",
                     style = MaterialTheme.typography.labelSmall,
                     color = GabOnSurfaceVariant
                 )
+
                 Text(
-                    text  = idea.createdAt,
+                    text = idea.createdAt,
                     style = MaterialTheme.typography.labelSmall,
                     color = GabOnSurfaceVariant
                 )
@@ -419,45 +454,46 @@ private fun IdeaCard(
 
             if (idea.expectedImpact.isNotBlank()) {
                 Spacer(modifier = Modifier.height(6.dp))
+
                 Text(
-                    text      = "Impacto: ${idea.expectedImpact}",
-                    style     = MaterialTheme.typography.bodySmall,
+                    text = "Potencial de impacto: ${idea.expectedImpact}",
+                    style = MaterialTheme.typography.bodySmall,
                     fontStyle = FontStyle.Italic,
-                    color     = GabBlue,
-                    maxLines  = 1,
-                    overflow  = TextOverflow.Ellipsis
+                    color = GabBlue,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
-            // Gestor action buttons
             if (canAct) {
                 Spacer(modifier = Modifier.height(12.dp))
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(10.dp))
+
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
-                        onClick  = onReject,
+                        onClick = onReject,
                         modifier = Modifier.weight(1f),
-                        colors   = ButtonDefaults.outlinedButtonColors(contentColor = GabError),
-                        border   = BorderStroke(1.dp, GabError)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = GabError),
+                        border = BorderStroke(1.dp, GabError)
                     ) {
                         Text("Recusar", style = MaterialTheme.typography.labelSmall)
                     }
 
                     if (idea.status == IdeaStatus.PENDING) {
                         OutlinedButton(
-                            onClick  = onPrioritize,
+                            onClick = onPrioritize,
                             modifier = Modifier.weight(1f),
-                            colors   = ButtonDefaults.outlinedButtonColors(contentColor = GabBlue)
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = GabBlue)
                         ) {
                             Text("Priorizar", style = MaterialTheme.typography.labelSmall)
                         }
                     }
 
                     Button(
-                        onClick  = onApprove,
+                        onClick = onApprove,
                         modifier = Modifier.weight(1f),
-                        colors   = ButtonDefaults.buttonColors(containerColor = GabGreen)
+                        colors = ButtonDefaults.buttonColors(containerColor = GabGreen)
                     ) {
                         Text("Aprovar", style = MaterialTheme.typography.labelSmall, color = Color.White)
                     }
@@ -467,18 +503,16 @@ private fun IdeaCard(
     }
 }
 
-// ── Micro-composables ──────────────────────────────────────────────────────────
-
 @Composable
 private fun MetaChip(label: String) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier         = Modifier
+        modifier = Modifier
             .background(GabSurfaceVariant, RoundedCornerShape(50))
             .padding(horizontal = 8.dp, vertical = 3.dp)
     ) {
         Text(
-            text  = label,
+            text = label,
             style = MaterialTheme.typography.labelSmall,
             color = GabOnSurfaceVariant
         )
@@ -489,20 +523,18 @@ private fun MetaChip(label: String) {
 private fun UrgencyChip(urgency: Int) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier         = Modifier
+        modifier = Modifier
             .background(urgencyColor(urgency), RoundedCornerShape(50))
             .padding(horizontal = 8.dp, vertical = 3.dp)
     ) {
         Text(
-            text       = urgencyLabel(urgency),
-            style      = MaterialTheme.typography.labelSmall,
+            text = urgencyLabel(urgency),
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
-            color      = urgencyContentColor(urgency)
+            color = urgencyContentColor(urgency)
         )
     }
 }
-
-// ── Form Sheet ─────────────────────────────────────────────────────────────────
 
 @Composable
 private fun IdeaFormSheet(
@@ -523,13 +555,14 @@ private fun IdeaFormSheet(
             .padding(horizontal = 24.dp, vertical = 16.dp)
     ) {
         Text(
-            text       = "Nova Ideia",
-            style      = MaterialTheme.typography.titleLarge,
+            text = "Nova Ideia",
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color      = GabTextDark
+            color = GabTextDark
         )
+
         Text(
-            text  = "Compartilhe sua sugestão com a equipe",
+            text = "Transforme desafios operacionais em inovação com impacto real.",
             style = MaterialTheme.typography.bodySmall,
             color = GabOnSurfaceVariant
         )
@@ -537,55 +570,56 @@ private fun IdeaFormSheet(
         Spacer(modifier = Modifier.height(20.dp))
 
         OutlinedTextField(
-            value         = state.formTitle,
+            value = state.formTitle,
             onValueChange = onTitleChange,
-            label         = { Text("Título *") },
-            singleLine    = true,
-            modifier      = Modifier.fillMaxWidth(),
-            colors        = OutlinedTextFieldDefaults.colors(
+            label = { Text("Título *") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = GabBlue,
-                focusedLabelColor  = GabBlue,
-                cursorColor        = GabBlue
+                focusedLabelColor = GabBlue,
+                cursorColor = GabBlue
             )
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
-            value         = state.formDescription,
+            value = state.formDescription,
             onValueChange = onDescriptionChange,
-            label         = { Text("Descrição") },
-            minLines      = 3,
-            modifier      = Modifier.fillMaxWidth(),
-            colors        = OutlinedTextFieldDefaults.colors(
+            label = { Text("Descrição") },
+            minLines = 3,
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = GabBlue,
-                focusedLabelColor  = GabBlue,
-                cursorColor        = GabBlue
+                focusedLabelColor = GabBlue,
+                cursorColor = GabBlue
             )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Sector selector
         Text(
-            text       = "Setor *",
-            style      = MaterialTheme.typography.labelMedium,
+            text = "Setor *",
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            color      = GabTextDark
+            color = GabTextDark
         )
+
         Spacer(modifier = Modifier.height(6.dp))
+
         Row(
-            modifier              = Modifier.horizontalScroll(rememberScrollState()),
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             IDEA_SECTORS.forEach { sector ->
                 FilterChip(
                     selected = state.formSector == sector,
-                    onClick  = { onSectorChange(sector) },
-                    label    = { Text(sector) },
-                    colors   = FilterChipDefaults.filterChipColors(
+                    onClick = { onSectorChange(sector) },
+                    label = { Text(sector) },
+                    colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = GabBlue,
-                        selectedLabelColor     = Color.White
+                        selectedLabelColor = Color.White
                     )
                 )
             }
@@ -593,26 +627,27 @@ private fun IdeaFormSheet(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Category selector
         Text(
-            text       = "Categoria *",
-            style      = MaterialTheme.typography.labelMedium,
+            text = "Categoria *",
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            color      = GabTextDark
+            color = GabTextDark
         )
+
         Spacer(modifier = Modifier.height(6.dp))
+
         Row(
-            modifier              = Modifier.horizontalScroll(rememberScrollState()),
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             IDEA_CATEGORIES.forEach { cat ->
                 FilterChip(
                     selected = state.formCategory == cat,
-                    onClick  = { onCategoryChange(cat) },
-                    label    = { Text(cat) },
-                    colors   = FilterChipDefaults.filterChipColors(
+                    onClick = { onCategoryChange(cat) },
+                    label = { Text(cat) },
+                    colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = GabBlue,
-                        selectedLabelColor     = Color.White
+                        selectedLabelColor = Color.White
                     )
                 )
             }
@@ -621,59 +656,64 @@ private fun IdeaFormSheet(
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value         = state.formExpectedImpact,
+            value = state.formExpectedImpact,
             onValueChange = onExpectedImpactChange,
-            label         = { Text("Impacto Esperado") },
-            singleLine    = true,
-            modifier      = Modifier.fillMaxWidth(),
-            colors        = OutlinedTextFieldDefaults.colors(
+            label = { Text("Impacto Esperado") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = GabBlue,
-                focusedLabelColor  = GabBlue,
-                cursorColor        = GabBlue
+                focusedLabelColor = GabBlue,
+                cursorColor = GabBlue
             )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Urgency selector
         Text(
-            text       = "Urgência",
-            style      = MaterialTheme.typography.labelMedium,
+            text = "Urgência",
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            color      = GabTextDark
+            color = GabTextDark
         )
+
         Spacer(modifier = Modifier.height(6.dp))
+
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             (1..5).forEach { level ->
                 val selected = state.formUrgency == level
+
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier         = Modifier
+                    modifier = Modifier
                         .size(52.dp)
                         .clip(MaterialTheme.shapes.small)
                         .background(if (selected) urgencyColor(level) else GabSurfaceVariant)
                         .clickable { onUrgencyChange(level) }
                 ) {
                     Text(
-                        text       = "$level",
-                        style      = MaterialTheme.typography.titleSmall,
+                        text = "$level",
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color      = if (selected) urgencyContentColor(level) else GabOnSurfaceVariant
+                        color = if (selected) urgencyContentColor(level) else GabOnSurfaceVariant
                     )
                 }
             }
         }
+
         Spacer(modifier = Modifier.height(4.dp))
+
         Text(
-            text  = "1 = Baixa  •  3 = Normal  •  5 = Crítica",
+            text = "1 = Baixa  •  3 = Normal  •  5 = Crítica",
             style = MaterialTheme.typography.labelSmall,
             color = GabOnSurfaceVariant
         )
 
         if (state.formError != null) {
             Spacer(modifier = Modifier.height(10.dp))
+
             Text(
-                text  = state.formError,
+                text = state.formError,
                 style = MaterialTheme.typography.labelMedium,
                 color = GabError
             )
@@ -683,49 +723,67 @@ private fun IdeaFormSheet(
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(
-                onClick  = onCancel,
+                onClick = onCancel,
                 modifier = Modifier.weight(1f)
-            ) { Text("Cancelar") }
+            ) {
+                Text("Cancelar")
+            }
+
             Button(
-                onClick  = onSave,
+                onClick = onSave,
                 modifier = Modifier.weight(1f),
-                colors   = ButtonDefaults.buttonColors(containerColor = GabBlue)
-            ) { Text("Enviar Ideia", color = Color.White) }
+                colors = ButtonDefaults.buttonColors(containerColor = GabBlue)
+            ) {
+                Text("Enviar Ideia", color = Color.White)
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
-// ── Previews ───────────────────────────────────────────────────────────────────
-
 private fun mockIdeasList() = listOf(
     IdeaItem(
-        id = "1", title = "Sistema de monitoramento de frota",
+        id = "1",
+        title = "Sistema de monitoramento de frota",
         description = "Integrar GPS com telemetria para rastrear combustível.",
-        sector = "Operações", category = "Inovação Tecnológica",
+        sector = "Operações",
+        category = "Inovação Tecnológica",
         expectedImpact = "Redução de 15% no custo de combustível",
-        urgency = 4, status = IdeaStatus.APPROVED,
-        authorId = "operador", authorName = "Operador Padrão",
-        createdAt = "02/04/2025", score = 60
+        urgency = 4,
+        status = IdeaStatus.APPROVED,
+        authorId = "operador",
+        authorName = "Operador Padrão",
+        createdAt = "02/04/2025",
+        score = 85
     ),
     IdeaItem(
-        id = "2", title = "Checklist digital para embarque",
+        id = "2",
+        title = "Checklist digital para embarque",
         description = "Substituir papel por app mobile no embarque.",
-        sector = "Operações", category = "Melhoria de Processo",
+        sector = "Operações",
+        category = "Melhoria de Processo",
         expectedImpact = "Reduzir erros em 30%",
-        urgency = 3, status = IdeaStatus.PENDING,
-        authorId = "operador", authorName = "Operador Padrão",
-        createdAt = "18/04/2025", score = 10
+        urgency = 3,
+        status = IdeaStatus.PENDING,
+        authorId = "operador",
+        authorName = "Operador Padrão",
+        createdAt = "18/04/2025",
+        score = 55
     ),
     IdeaItem(
-        id = "3", title = "Programa de carona corporativa",
+        id = "3",
+        title = "Programa de carona corporativa",
         description = "Plataforma para funcionários compartilharem transporte.",
-        sector = "RH", category = "Engajamento",
+        sector = "RH",
+        category = "Engajamento",
         expectedImpact = "Redução de emissões de CO₂",
-        urgency = 2, status = IdeaStatus.IN_REVIEW,
-        authorId = "colaborador", authorName = "Ana Lima",
-        createdAt = "10/04/2025", score = 30
+        urgency = 2,
+        status = IdeaStatus.IN_REVIEW,
+        authorId = "colaborador",
+        authorName = "Ana Lima",
+        createdAt = "10/04/2025",
+        score = 35
     )
 )
 
@@ -735,16 +793,16 @@ private fun IdeasOperadorPreview() {
     GabInovaTheme {
         IdeasContent(
             state = IdeasUiState(
-                ideas          = mockIdeasList(),
-                userRole       = UserRole.COLLABORATOR,
-                currentUserId  = "operador",
+                ideas = mockIdeasList(),
+                userRole = UserRole.COLLABORATOR,
+                currentUserId = "operador",
                 currentUserName = "Operador Padrão"
             ),
             onStatusFilter = {},
-            onAddClick     = {},
-            onApprove      = {},
-            onReject       = {},
-            onPrioritize   = {}
+            onAddClick = {},
+            onApprove = {},
+            onReject = {},
+            onPrioritize = {}
         )
     }
 }
@@ -755,14 +813,14 @@ private fun IdeasGestorPreview() {
     GabInovaTheme {
         IdeasContent(
             state = IdeasUiState(
-                ideas    = mockIdeasList(),
+                ideas = mockIdeasList(),
                 userRole = UserRole.MANAGER
             ),
             onStatusFilter = {},
-            onAddClick     = {},
-            onApprove      = {},
-            onReject       = {},
-            onPrioritize   = {}
+            onAddClick = {},
+            onApprove = {},
+            onReject = {},
+            onPrioritize = {}
         )
     }
 }
@@ -773,14 +831,14 @@ private fun IdeasLiderancaPreview() {
     GabInovaTheme {
         IdeasContent(
             state = IdeasUiState(
-                ideas    = mockIdeasList(),
+                ideas = mockIdeasList(),
                 userRole = UserRole.ADMIN
             ),
             onStatusFilter = {},
-            onAddClick     = {},
-            onApprove      = {},
-            onReject       = {},
-            onPrioritize   = {}
+            onAddClick = {},
+            onApprove = {},
+            onReject = {},
+            onPrioritize = {}
         )
     }
 }
@@ -791,18 +849,18 @@ private fun IdeaFormPreview() {
     GabInovaTheme {
         IdeaFormSheet(
             state = IdeasUiState(
-                formTitle   = "Minha nova ideia",
-                formSector  = "Tecnologia",
+                formTitle = "Minha nova ideia",
+                formSector = "Tecnologia",
                 formUrgency = 4
             ),
-            onTitleChange          = {},
-            onDescriptionChange    = {},
-            onSectorChange         = {},
-            onCategoryChange       = {},
+            onTitleChange = {},
+            onDescriptionChange = {},
+            onSectorChange = {},
+            onCategoryChange = {},
             onExpectedImpactChange = {},
-            onUrgencyChange        = {},
-            onSave                 = {},
-            onCancel               = {}
+            onUrgencyChange = {},
+            onSave = {},
+            onCancel = {}
         )
     }
 }
