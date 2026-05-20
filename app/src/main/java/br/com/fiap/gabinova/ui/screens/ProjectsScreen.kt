@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -22,16 +21,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
@@ -50,9 +50,6 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -64,7 +61,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.material3.CircularProgressIndicator
 import br.com.fiap.gabinova.model.ProjectStatus
 import br.com.fiap.gabinova.model.UserRole
 import br.com.fiap.gabinova.ui.components.EmptyState
@@ -88,11 +84,13 @@ import br.com.fiap.gabinova.ui.viewmodel.ProjectsUiState
 import br.com.fiap.gabinova.ui.viewmodel.ProjectsViewModel
 import br.com.fiap.gabinova.ui.viewmodel.ProjectsViewModelFactory
 
-// ── Constants & helpers ────────────────────────────────────────────────────────
+
+private val StrategicPurple = Color(0xFF6A1B9A)
 
 private val FILTER_PROJECT_STATUSES: List<ProjectStatus?> = listOf(
     null,
     ProjectStatus.PLANNING,
+    ProjectStatus.AWAITING_APPROVAL,
     ProjectStatus.IN_PROGRESS,
     ProjectStatus.ON_HOLD,
     ProjectStatus.COMPLETED,
@@ -100,34 +98,37 @@ private val FILTER_PROJECT_STATUSES: List<ProjectStatus?> = listOf(
 )
 
 private fun statusToGabStatus(s: ProjectStatus) = when (s) {
-    ProjectStatus.PLANNING    -> GabStatus.PENDENTE
+    ProjectStatus.PLANNING -> GabStatus.PENDENTE
+    ProjectStatus.AWAITING_APPROVAL -> GabStatus.EM_ANALISE
     ProjectStatus.IN_PROGRESS -> GabStatus.ATIVO
-    ProjectStatus.ON_HOLD     -> GabStatus.EM_ANALISE
-    ProjectStatus.COMPLETED   -> GabStatus.CONCLUIDO
-    ProjectStatus.CANCELLED   -> GabStatus.REJEITADO
+    ProjectStatus.ON_HOLD -> GabStatus.EM_ANALISE
+    ProjectStatus.COMPLETED -> GabStatus.CONCLUIDO
+    ProjectStatus.CANCELLED -> GabStatus.REJEITADO
 }
 
 private fun statusLabel(s: ProjectStatus?) = when (s) {
-    null                      -> "Todos"
-    ProjectStatus.PLANNING    -> "Planejamento"
+    null -> "Todos"
+    ProjectStatus.PLANNING -> "Planejamento"
+    ProjectStatus.AWAITING_APPROVAL -> "Aguardando Aprovação"
     ProjectStatus.IN_PROGRESS -> "Em Andamento"
-    ProjectStatus.ON_HOLD     -> "Pausado"
-    ProjectStatus.COMPLETED   -> "Concluído"
-    ProjectStatus.CANCELLED   -> "Cancelado"
+    ProjectStatus.ON_HOLD -> "Pausado"
+    ProjectStatus.COMPLETED -> "Concluído"
+    ProjectStatus.CANCELLED -> "Cancelado"
 }
 
 private fun statusStripColor(s: ProjectStatus) = when (s) {
-    ProjectStatus.PLANNING    -> GabLightBlue
+    ProjectStatus.PLANNING -> GabLightBlue
+    ProjectStatus.AWAITING_APPROVAL -> StrategicPurple
     ProjectStatus.IN_PROGRESS -> GabGreen
-    ProjectStatus.ON_HOLD     -> Color(0xFFFF9800)
-    ProjectStatus.COMPLETED   -> GabBlue
-    ProjectStatus.CANCELLED   -> GabError
+    ProjectStatus.ON_HOLD -> Color(0xFFFF9800)
+    ProjectStatus.COMPLETED -> GabBlue
+    ProjectStatus.CANCELLED -> GabError
 }
 
 private fun progressBarColor(progress: Int) = when {
     progress >= 70 -> GabGreen
     progress >= 40 -> GabYellow
-    else           -> GabError
+    else -> GabError
 }
 
 private fun productivityColor(value: String): Color {
@@ -135,7 +136,7 @@ private fun productivityColor(value: String): Color {
     return when {
         pct >= 80 -> GabGreen
         pct >= 50 -> GabYellow
-        else      -> GabError
+        else -> GabError
     }
 }
 
@@ -144,27 +145,48 @@ private fun productivityTextColor(value: String): Color {
     return if (pct in 40..79) GabTextDark else Color.White
 }
 
-// ── Screen ─────────────────────────────────────────────────────────────────────
+private fun strategicGoal(project: ProjectItem): String = when {
+    project.title.contains("frota", ignoreCase = true) -> "Eficiência Operacional"
+    project.title.contains("treinamento", ignoreCase = true) -> "Desenvolvimento e Segurança"
+    project.title.contains("feedback", ignoreCase = true) -> "Experiência do Cliente"
+    project.ideaOrigin.contains("custo", ignoreCase = true) -> "Redução de Custos"
+    project.ideaOrigin.contains("cliente", ignoreCase = true) -> "Experiência do Cliente"
+    else -> "Eficiência Operacional"
+}
+
+private fun operationalImpact(project: ProjectItem): String = when {
+    project.status == ProjectStatus.AWAITING_APPROVAL ->
+        "Projeto estruturado pelo gestor e aguardando validação estratégica da liderança."
+    project.status == ProjectStatus.COMPLETED ->
+        "Resultado acompanhado em produtividade, eficiência e retorno para o negócio."
+    project.progress >= 70 ->
+        "Projeto em fase avançada, com potencial de impacto mensurável."
+    project.progress >= 40 ->
+        "Iniciativa em execução, conectando ideia aprovada à melhoria operacional."
+    else ->
+        "Projeto estruturado a partir de uma ideia priorizada pelo gestor."
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectsScreen() {
-    val context    = LocalContext.current
+    val context = LocalContext.current
     val vm: ProjectsViewModel = viewModel(factory = ProjectsViewModelFactory(context))
-    val state      = vm.state
+    val state = vm.state
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     when {
         state.isLoading -> Box(
-            modifier         = Modifier
+            modifier = Modifier
                 .fillMaxSize()
                 .background(GabBackground),
             contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator(color = GabBlue)
         }
+
         state.error != null -> Box(
-            modifier         = Modifier
+            modifier = Modifier
                 .fillMaxSize()
                 .background(GabBackground)
                 .padding(24.dp),
@@ -172,148 +194,169 @@ fun ProjectsScreen() {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text  = state.error,
+                    text = state.error,
                     style = MaterialTheme.typography.bodyMedium,
                     color = GabError
                 )
+
                 Spacer(modifier = Modifier.height(16.dp))
+
                 Button(
                     onClick = vm::retry,
-                    colors  = ButtonDefaults.buttonColors(containerColor = GabBlue)
-                ) { Text("Tentar novamente", color = Color.White) }
+                    colors = ButtonDefaults.buttonColors(containerColor = GabBlue)
+                ) {
+                    Text("Tentar novamente", color = Color.White)
+                }
             }
         }
+
         else -> {
             if (state.isFormVisible) {
                 ModalBottomSheet(
                     onDismissRequest = vm::hideForm,
-                    sheetState       = sheetState,
-                    containerColor   = GabSurface
+                    sheetState = sheetState,
+                    containerColor = GabSurface
                 ) {
                     ProjectFormSheet(
-                        state                  = state,
-                        onTitleChange          = vm::onTitleChange,
-                        onIdeaOriginChange     = vm::onIdeaOriginChange,
-                        onResponsibleChange    = vm::onResponsibleChange,
-                        onStatusChange         = vm::onStatusChange,
-                        onStageChange          = vm::onStageChange,
-                        onInvestmentChange     = vm::onInvestmentChange,
+                        state = state,
+                        onTitleChange = vm::onTitleChange,
+                        onIdeaOriginChange = vm::onIdeaOriginChange,
+                        onResponsibleChange = vm::onResponsibleChange,
+                        onStatusChange = vm::onStatusChange,
+                        onStageChange = vm::onStageChange,
+                        onInvestmentChange = vm::onInvestmentChange,
                         onExpectedReturnChange = vm::onExpectedReturnChange,
-                        onActualReturnChange   = vm::onActualReturnChange,
-                        onProductivityChange   = vm::onProductivityChange,
-                        onProgressChange       = vm::onProgressChange,
-                        onDeadlineChange       = vm::onDeadlineChange,
-                        onSave                 = vm::saveProject,
-                        onCancel               = vm::hideForm
+                        onActualReturnChange = vm::onActualReturnChange,
+                        onProductivityChange = vm::onProductivityChange,
+                        onProgressChange = vm::onProgressChange,
+                        onDeadlineChange = vm::onDeadlineChange,
+                        onSave = vm::saveProject,
+                        onCancel = vm::hideForm
                     )
                 }
             }
+
             ProjectsContent(
-                state          = state,
+                state = state,
                 onStatusFilter = vm::onStatusFilter,
-                onAddClick     = vm::showCreateForm,
-                onEditClick    = vm::showEditForm
+                onAddClick = vm::showCreateForm,
+                onEditClick = vm::showEditForm,
+                onApproveProject = vm::approveProjectStrategically
             )
         }
     }
 }
-
-// ── Content ────────────────────────────────────────────────────────────────────
 
 @Composable
 internal fun ProjectsContent(
     state: ProjectsUiState,
     onStatusFilter: (ProjectStatus?) -> Unit,
     onAddClick: () -> Unit,
-    onEditClick: (ProjectItem) -> Unit
+    onEditClick: (ProjectItem) -> Unit,
+    onApproveProject: (String) -> Unit
 ) {
+    val isLeadership = state.userRole == UserRole.ADMIN || state.userRole == UserRole.ANALYST
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(GabBackground)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-
-            // Header
             Row(
-                modifier              = Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalAlignment     = Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = when {
-                        state.isManager -> "Gestão de Projetos"
-                        else            -> "Projetos"
-                    },
-                    style      = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color      = GabTextDark
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = when {
+                            state.isManager -> "Projetos Estratégicos"
+                            isLeadership -> "Aprovação Estratégica"
+                            else -> "Projetos"
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = GabTextDark
+                    )
+
+                    Text(
+                        text = when {
+                            state.isManager -> "Crie e acompanhe projetos originados de ideias priorizadas."
+                            isLeadership -> "Valide projetos estratégicos e acompanhe impacto, ROI e produtividade."
+                            else -> "Acompanhe iniciativas originadas a partir de ideias com impacto operacional."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = GabOnSurfaceVariant
+                    )
+                }
+
                 if (state.projects.isNotEmpty()) {
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier         = Modifier
+                        modifier = Modifier
                             .background(GabBlue, RoundedCornerShape(50))
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text       = "${state.visibleProjects.size}",
-                            style      = MaterialTheme.typography.labelMedium,
+                            text = "${state.visibleProjects.size}",
+                            style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color      = Color.White
+                            color = Color.White
                         )
                     }
                 }
             }
 
-            // Stats summary
             if (state.projects.isNotEmpty()) {
                 Row(
-                    modifier              = Modifier
+                    modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     StatCard(
-                        value    = "${state.projects.size}",
-                        label    = "Total",
-                        icon     = Icons.Filled.Work,
+                        value = "${state.projects.size}",
+                        label = "Total",
+                        icon = Icons.Filled.Work,
                         iconTint = GabBlue,
                         modifier = Modifier.weight(1f)
                     )
+
                     StatCard(
-                        value    = "${state.inProgressCount}",
-                        label    = "Em Andamento",
-                        icon     = Icons.AutoMirrored.Filled.TrendingUp,
+                        value = "${state.inProgressCount}",
+                        label = "Em Execução",
+                        icon = Icons.AutoMirrored.Filled.TrendingUp,
                         iconTint = GabGreen,
                         modifier = Modifier.weight(1f)
                     )
+
                     StatCard(
-                        value    = "${state.completedCount}",
-                        label    = "Concluídos",
-                        icon     = Icons.Filled.CheckCircle,
+                        value = "${state.completedCount}",
+                        label = "Impacto Medido",
+                        icon = Icons.Filled.CheckCircle,
                         iconTint = GabLightBlue,
                         modifier = Modifier.weight(1f)
                     )
                 }
+
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            // Status filter chips
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding        = PaddingValues(start = 20.dp, end = 20.dp)
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp)
             ) {
                 items(FILTER_PROJECT_STATUSES) { status ->
                     FilterChip(
                         selected = state.selectedStatus == status,
-                        onClick  = { onStatusFilter(status) },
-                        label    = { Text(statusLabel(status)) },
-                        colors   = FilterChipDefaults.filterChipColors(
+                        onClick = { onStatusFilter(status) },
+                        label = { Text(statusLabel(status)) },
+                        colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = GabBlue,
-                            selectedLabelColor     = Color.White
+                            selectedLabelColor = Color.White
                         )
                     )
                 }
@@ -321,17 +364,16 @@ internal fun ProjectsContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // List or empty state
             if (state.visibleProjects.isEmpty()) {
                 Box(
-                    modifier         = Modifier
+                    modifier = Modifier
                         .fillMaxSize()
                         .padding(bottom = 72.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     EmptyState(
-                        icon    = Icons.Filled.Folder,
-                        title   = "Nenhum projeto encontrado",
+                        icon = Icons.Filled.Folder,
+                        title = "Nenhum projeto encontrado",
                         message = if (state.isManager)
                             "Crie um projeto a partir de uma ideia aprovada."
                         else
@@ -340,30 +382,31 @@ internal fun ProjectsContent(
                 }
             } else {
                 LazyColumn(
-                    contentPadding      = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 88.dp),
+                    contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 88.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier            = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     items(state.visibleProjects, key = { it.id }) { project ->
                         ProjectCard(
-                            project     = project,
-                            canEdit     = state.canEdit,
-                            onEditClick = { onEditClick(project) }
+                            project = project,
+                            canEdit = state.canEdit,
+                            isLeadership = isLeadership,
+                            onEditClick = { onEditClick(project) },
+                            onApproveProject = { onApproveProject(project.id) }
                         )
                     }
                 }
             }
         }
 
-        // FAB — Gestor only
         if (state.isManager) {
             ExtendedFloatingActionButton(
-                text           = { Text("Novo Projeto") },
-                icon           = { Icon(Icons.Default.Add, contentDescription = null) },
-                onClick        = onAddClick,
+                text = { Text("Novo Projeto") },
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                onClick = onAddClick,
                 containerColor = GabBlue,
-                contentColor   = Color.White,
-                modifier       = Modifier
+                contentColor = Color.White,
+                modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(20.dp)
             )
@@ -371,21 +414,20 @@ internal fun ProjectsContent(
     }
 }
 
-// ── ProjectCard ────────────────────────────────────────────────────────────────
-
 @Composable
 private fun ProjectCard(
     project: ProjectItem,
     canEdit: Boolean,
-    onEditClick: () -> Unit
+    isLeadership: Boolean,
+    onEditClick: () -> Unit,
+    onApproveProject: () -> Unit
 ) {
     Card(
-        modifier  = Modifier.fillMaxWidth(),
-        colors    = CardDefaults.cardColors(containerColor = GabSurface),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = GabSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape     = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.medium
     ) {
-        // Status color strip
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -394,32 +436,32 @@ private fun ProjectCard(
         )
 
         Column(modifier = Modifier.padding(16.dp)) {
-
-            // Status row + edit button
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment     = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     StatusChip(status = statusToGabStatus(project.status))
+
                     if (project.stage.isNotBlank()) {
                         StageBadge(label = project.stage)
                     }
                 }
+
                 if (canEdit) {
                     IconButton(
-                        onClick  = onEditClick,
+                        onClick = onEditClick,
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
-                            imageVector        = Icons.Filled.Edit,
+                            imageVector = Icons.Filled.Edit,
                             contentDescription = "Editar",
-                            tint               = GabLightBlue,
-                            modifier           = Modifier.size(18.dp)
+                            tint = GabLightBlue,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
@@ -427,44 +469,52 @@ private fun ProjectCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Title
             Text(
-                text       = project.title,
-                style      = MaterialTheme.typography.titleSmall,
+                text = project.title,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color      = GabTextDark
+                color = GabTextDark
             )
 
-            // Idea of origin
             if (project.ideaOrigin.isNotBlank()) {
                 Spacer(modifier = Modifier.height(2.dp))
+
                 Text(
-                    text      = "Ideia: ${project.ideaOrigin}",
-                    style     = MaterialTheme.typography.bodySmall,
+                    text = "Originado da ideia: ${project.ideaOrigin}",
+                    style = MaterialTheme.typography.bodySmall,
                     fontStyle = FontStyle.Italic,
-                    color     = GabOnSurfaceVariant,
-                    maxLines  = 1,
-                    overflow  = TextOverflow.Ellipsis
+                    color = GabOnSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Objetivo estratégico: ${strategicGoal(project)}",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = GabBlue
+            )
+
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Responsible + deadline
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 if (project.responsible.isNotBlank()) {
                     Text(
-                        text  = "Resp.: ${project.responsible}",
+                        text = "Resp.: ${project.responsible}",
                         style = MaterialTheme.typography.labelSmall,
                         color = GabOnSurfaceVariant
                     )
                 }
+
                 if (project.deadline.isNotBlank()) {
                     Text(
-                        text  = "Prazo: ${project.deadline}",
+                        text = "Prazo: ${project.deadline}",
                         style = MaterialTheme.typography.labelSmall,
                         color = GabOnSurfaceVariant
                     )
@@ -473,67 +523,73 @@ private fun ProjectCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Progress bar
             LinearProgressIndicator(
-                progress   = { project.progress / 100f },
-                modifier   = Modifier.fillMaxWidth(),
-                color      = progressBarColor(project.progress),
+                progress = { project.progress / 100f },
+                modifier = Modifier.fillMaxWidth(),
+                color = progressBarColor(project.progress),
                 trackColor = GabSurfaceVariant
             )
+
             Spacer(modifier = Modifier.height(4.dp))
+
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text  = "Progresso",
+                    text = "Implementação do projeto",
                     style = MaterialTheme.typography.labelSmall,
                     color = GabOnSurfaceVariant
                 )
+
                 Text(
-                    text       = "${project.progress}%",
-                    style      = MaterialTheme.typography.labelSmall,
+                    text = "${project.progress}%",
+                    style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color      = progressBarColor(project.progress)
+                    color = progressBarColor(project.progress)
                 )
             }
 
-            // Financial info
             val hasFinancials = project.investment.isNotBlank() ||
                     project.expectedReturn.isNotBlank() ||
                     project.actualReturn.isNotBlank()
+
             if (hasFinancials) {
                 Spacer(modifier = Modifier.height(10.dp))
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(8.dp))
+
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (project.investment.isNotBlank()) {
-                        FinancePill(label = "Invest.", value = project.investment)
+                        FinancePill(label = "Investimento", value = project.investment)
                     }
+
                     if (project.expectedReturn.isNotBlank()) {
-                        FinancePill(label = "Ret. Esp.", value = project.expectedReturn)
+                        FinancePill(label = "Retorno Esp.", value = project.expectedReturn)
                     }
+
                     if (project.actualReturn.isNotBlank()) {
-                        FinancePill(label = "Ret. Real", value = project.actualReturn)
+                        FinancePill(label = "Retorno Real", value = project.actualReturn)
                     }
                 }
             }
 
-            // Productivity badge
             if (project.productivity.isNotBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text  = "Produtividade:",
+                        text = "Ganho de produtividade:",
                         style = MaterialTheme.typography.labelSmall,
                         color = GabOnSurfaceVariant
                     )
+
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier         = Modifier
+                        modifier = Modifier
                             .background(
                                 productivityColor(project.productivity),
                                 RoundedCornerShape(50)
@@ -541,30 +597,88 @@ private fun ProjectCard(
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text       = project.productivity,
-                            style      = MaterialTheme.typography.labelSmall,
+                            text = project.productivity,
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color      = productivityTextColor(project.productivity)
+                            color = productivityTextColor(project.productivity)
                         )
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Impacto operacional: ${operationalImpact(project)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = GabOnSurfaceVariant
+            )
+
+            if (project.status == ProjectStatus.AWAITING_APPROVAL) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(StrategicPurple.copy(alpha = 0.10f), RoundedCornerShape(12.dp))
+                        .padding(10.dp)
+                ) {
+                    Text(
+                        text = "Aguardando aprovação estratégica da liderança.",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = StrategicPurple
+                    )
+                }
+
+                if (isLeadership) {
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(
+                        onClick = onApproveProject,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = GabBlue)
+                    ) {
+                        Text(
+                            text = "Aprovar Projeto Estratégico",
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            if (project.status == ProjectStatus.COMPLETED) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(GabGreen.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+                        .padding(10.dp)
+                ) {
+                    Text(
+                        text = "Projeto concluído com impacto mensurável para o negócio.",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = GabGreen
+                    )
                 }
             }
         }
     }
 }
 
-// ── Micro-composables ──────────────────────────────────────────────────────────
-
 @Composable
 private fun StageBadge(label: String) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier         = Modifier
+        modifier = Modifier
             .background(GabSurfaceVariant, RoundedCornerShape(50))
             .padding(horizontal = 8.dp, vertical = 3.dp)
     ) {
         Text(
-            text  = label,
+            text = label,
             style = MaterialTheme.typography.labelSmall,
             color = GabOnSurfaceVariant
         )
@@ -575,20 +689,19 @@ private fun StageBadge(label: String) {
 private fun FinancePill(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text  = label,
+            text = label,
             style = MaterialTheme.typography.labelSmall,
             color = GabOnSurfaceVariant
         )
+
         Text(
-            text       = value,
-            style      = MaterialTheme.typography.labelMedium,
+            text = value,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            color      = GabBlue
+            color = GabBlue
         )
     }
 }
-
-// ── Form Sheet ─────────────────────────────────────────────────────────────────
 
 @Composable
 private fun ProjectFormSheet(
@@ -609,8 +722,8 @@ private fun ProjectFormSheet(
 ) {
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = GabBlue,
-        focusedLabelColor  = GabBlue,
-        cursorColor        = GabBlue
+        focusedLabelColor = GabBlue,
+        cursorColor = GabBlue
     )
 
     Column(
@@ -620,79 +733,78 @@ private fun ProjectFormSheet(
             .padding(horizontal = 24.dp, vertical = 16.dp)
     ) {
         Text(
-            text       = if (state.isEditing) "Editar Projeto" else "Novo Projeto",
-            style      = MaterialTheme.typography.titleLarge,
+            text = if (state.isEditing) "Editar Projeto" else "Novo Projeto",
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color      = GabTextDark
+            color = GabTextDark
         )
+
         Text(
-            text  = if (state.isEditing)
-                "Atualize os dados do projeto"
+            text = if (state.isEditing)
+                "Atualize os dados, resultados e indicadores da iniciativa."
             else
-                "Crie um projeto a partir de uma ideia aprovada",
+                "Transforme ideias priorizadas em projetos com impacto mensurável.",
             style = MaterialTheme.typography.bodySmall,
             color = GabOnSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Title
         OutlinedTextField(
-            value         = state.formTitle,
+            value = state.formTitle,
             onValueChange = onTitleChange,
-            label         = { Text("Título *") },
-            singleLine    = true,
-            modifier      = Modifier.fillMaxWidth(),
-            colors        = fieldColors
+            label = { Text("Título *") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Idea of origin
         OutlinedTextField(
-            value         = state.formIdeaOrigin,
+            value = state.formIdeaOrigin,
             onValueChange = onIdeaOriginChange,
-            label         = { Text("Ideia de Origem") },
-            singleLine    = true,
-            modifier      = Modifier.fillMaxWidth(),
-            colors        = fieldColors
+            label = { Text("Ideia de Origem") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Responsible
         OutlinedTextField(
-            value         = state.formResponsible,
+            value = state.formResponsible,
             onValueChange = onResponsibleChange,
-            label         = { Text("Responsável") },
-            singleLine    = true,
-            modifier      = Modifier.fillMaxWidth(),
-            colors        = fieldColors
+            label = { Text("Responsável") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Status
         FormSectionLabel("Status")
         Spacer(modifier = Modifier.height(6.dp))
+
         Row(
-            modifier              = Modifier.horizontalScroll(rememberScrollState()),
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             listOf(
-                ProjectStatus.PLANNING    to "Planejamento",
+                ProjectStatus.PLANNING to "Planejamento",
+                ProjectStatus.AWAITING_APPROVAL to "Aguardando Aprovação",
                 ProjectStatus.IN_PROGRESS to "Em Andamento",
-                ProjectStatus.ON_HOLD     to "Pausado",
-                ProjectStatus.COMPLETED   to "Concluído",
-                ProjectStatus.CANCELLED   to "Cancelado"
+                ProjectStatus.ON_HOLD to "Pausado",
+                ProjectStatus.COMPLETED to "Concluído",
+                ProjectStatus.CANCELLED to "Cancelado"
             ).forEach { (status, label) ->
                 FilterChip(
                     selected = state.formStatus == status,
-                    onClick  = { onStatusChange(status) },
-                    label    = { Text(label) },
-                    colors   = FilterChipDefaults.filterChipColors(
+                    onClick = { onStatusChange(status) },
+                    label = { Text(label) },
+                    colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = statusStripColor(status),
-                        selectedLabelColor     = Color.White
+                        selectedLabelColor = Color.White
                     )
                 )
             }
@@ -700,21 +812,21 @@ private fun ProjectFormSheet(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Stage
         FormSectionLabel("Etapa")
         Spacer(modifier = Modifier.height(6.dp))
+
         Row(
-            modifier              = Modifier.horizontalScroll(rememberScrollState()),
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             PROJECT_STAGES.forEach { stage ->
                 FilterChip(
                     selected = state.formStage == stage,
-                    onClick  = { onStageChange(stage) },
-                    label    = { Text(stage) },
-                    colors   = FilterChipDefaults.filterChipColors(
+                    onClick = { onStageChange(stage) },
+                    label = { Text(stage) },
+                    colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = GabBlue,
-                        selectedLabelColor     = Color.White
+                        selectedLabelColor = Color.White
                     )
                 )
             }
@@ -722,87 +834,85 @@ private fun ProjectFormSheet(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Progress slider
         FormSectionLabel("Progresso: ${state.formProgress.toInt()}%")
+
         Slider(
-            value       = state.formProgress,
+            value = state.formProgress,
             onValueChange = onProgressChange,
-            valueRange  = 0f..100f,
-            modifier    = Modifier.fillMaxWidth(),
-            colors      = SliderDefaults.colors(
-                thumbColor       = progressBarColor(state.formProgress.toInt()),
+            valueRange = 0f..100f,
+            modifier = Modifier.fillMaxWidth(),
+            colors = SliderDefaults.colors(
+                thumbColor = progressBarColor(state.formProgress.toInt()),
                 activeTrackColor = progressBarColor(state.formProgress.toInt())
             )
         )
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Prazo
         OutlinedTextField(
-            value         = state.formDeadline,
+            value = state.formDeadline,
             onValueChange = onDeadlineChange,
-            label         = { Text("Prazo (ex: 30/12/2025)") },
-            singleLine    = true,
-            modifier      = Modifier.fillMaxWidth(),
-            colors        = fieldColors
+            label = { Text("Prazo (ex: 30/12/2026)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Financial fields
-        FormSectionLabel("Financeiro")
+        FormSectionLabel("Indicadores de Resultado")
         Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
-            value            = state.formInvestment,
-            onValueChange    = onInvestmentChange,
-            label            = { Text("Investimento (ex: R$ 50.000)") },
-            singleLine       = true,
-            keyboardOptions  = KeyboardOptions(keyboardType = KeyboardType.Text),
-            modifier         = Modifier.fillMaxWidth(),
-            colors           = fieldColors
+            value = state.formInvestment,
+            onValueChange = onInvestmentChange,
+            label = { Text("Investimento (ex: R$ 50.000)") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
-            value            = state.formExpectedReturn,
-            onValueChange    = onExpectedReturnChange,
-            label            = { Text("Retorno Esperado") },
-            singleLine       = true,
-            keyboardOptions  = KeyboardOptions(keyboardType = KeyboardType.Text),
-            modifier         = Modifier.fillMaxWidth(),
-            colors           = fieldColors
+            value = state.formExpectedReturn,
+            onValueChange = onExpectedReturnChange,
+            label = { Text("Retorno Esperado") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
-            value            = state.formActualReturn,
-            onValueChange    = onActualReturnChange,
-            label            = { Text("Retorno Real") },
-            singleLine       = true,
-            keyboardOptions  = KeyboardOptions(keyboardType = KeyboardType.Text),
-            modifier         = Modifier.fillMaxWidth(),
-            colors           = fieldColors
+            value = state.formActualReturn,
+            onValueChange = onActualReturnChange,
+            label = { Text("Retorno Real") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
-            value         = state.formProductivity,
+            value = state.formProductivity,
             onValueChange = onProductivityChange,
-            label         = { Text("Produtividade (ex: 85%)") },
-            singleLine    = true,
-            modifier      = Modifier.fillMaxWidth(),
-            colors        = fieldColors
+            label = { Text("Ganho de produtividade (ex: 85%)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = fieldColors
         )
 
-        // Error
         if (state.formError != null) {
             Spacer(modifier = Modifier.height(10.dp))
+
             Text(
-                text  = state.formError,
+                text = state.formError,
                 style = MaterialTheme.typography.labelMedium,
                 color = GabError
             )
@@ -812,16 +922,19 @@ private fun ProjectFormSheet(
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(
-                onClick  = onCancel,
+                onClick = onCancel,
                 modifier = Modifier.weight(1f)
-            ) { Text("Cancelar") }
+            ) {
+                Text("Cancelar")
+            }
+
             Button(
-                onClick  = onSave,
+                onClick = onSave,
                 modifier = Modifier.weight(1f),
-                colors   = ButtonDefaults.buttonColors(containerColor = GabBlue)
+                colors = ButtonDefaults.buttonColors(containerColor = GabBlue)
             ) {
                 Text(
-                    text  = if (state.isEditing) "Salvar" else "Criar Projeto",
+                    text = if (state.isEditing) "Salvar" else "Criar Projeto",
                     color = Color.White
                 )
             }
@@ -834,42 +947,58 @@ private fun ProjectFormSheet(
 @Composable
 private fun FormSectionLabel(text: String) {
     Text(
-        text       = text,
-        style      = MaterialTheme.typography.labelMedium,
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
         fontWeight = FontWeight.SemiBold,
-        color      = GabTextDark
+        color = GabTextDark
     )
 }
 
-// ── Previews ───────────────────────────────────────────────────────────────────
-
 private fun mockProjectList() = listOf(
     ProjectItem(
-        id = "p1", title = "Sistema de Monitoramento de Frota",
+        id = "p1",
+        title = "Sistema de Monitoramento de Frota",
         ideaOrigin = "Sistema de monitoramento de frota em tempo real",
-        responsible = "Gestor Regional", status = ProjectStatus.IN_PROGRESS,
-        stage = "Desenvolvimento", investment = "R$ 120.000",
-        expectedReturn = "R$ 300.000", actualReturn = "",
-        productivity = "72%", progress = 65,
-        deadline = "30/09/2025", createdAt = "01/03/2025"
+        responsible = "Gestor Regional",
+        status = ProjectStatus.AWAITING_APPROVAL,
+        stage = "Validação Estratégica",
+        investment = "R$ 120.000",
+        expectedReturn = "R$ 300.000",
+        actualReturn = "",
+        productivity = "72%",
+        progress = 65,
+        deadline = "30/09/2026",
+        createdAt = "01/03/2026"
     ),
     ProjectItem(
-        id = "p2", title = "Plataforma de Treinamento Digital",
+        id = "p2",
+        title = "Plataforma de Treinamento Digital",
         ideaOrigin = "Treinamento gamificado para motoristas",
-        responsible = "Gestor Regional", status = ProjectStatus.COMPLETED,
-        stage = "Encerramento", investment = "R$ 80.000",
-        expectedReturn = "R$ 150.000", actualReturn = "R$ 178.000",
-        productivity = "92%", progress = 100,
-        deadline = "30/04/2025", createdAt = "01/01/2025"
+        responsible = "Gestor Regional",
+        status = ProjectStatus.COMPLETED,
+        stage = "Encerramento",
+        investment = "R$ 80.000",
+        expectedReturn = "R$ 150.000",
+        actualReturn = "R$ 178.000",
+        productivity = "92%",
+        progress = 100,
+        deadline = "30/04/2026",
+        createdAt = "01/01/2026"
     ),
     ProjectItem(
-        id = "p3", title = "Painel de Feedback de Clientes",
+        id = "p3",
+        title = "Painel de Feedback de Clientes",
         ideaOrigin = "Painel de feedback de clientes por rota",
-        responsible = "Gestor Regional", status = ProjectStatus.PLANNING,
-        stage = "Levantamento", investment = "R$ 45.000",
-        expectedReturn = "R$ 90.000", actualReturn = "",
-        productivity = "", progress = 10,
-        deadline = "31/12/2025", createdAt = "15/04/2025"
+        responsible = "Gestor Regional",
+        status = ProjectStatus.PLANNING,
+        stage = "Levantamento",
+        investment = "R$ 45.000",
+        expectedReturn = "R$ 90.000",
+        actualReturn = "",
+        productivity = "",
+        progress = 10,
+        deadline = "31/12/2026",
+        createdAt = "15/04/2026"
     )
 )
 
@@ -883,8 +1012,9 @@ private fun ProjectsGestorPreview() {
                 userRole = UserRole.MANAGER
             ),
             onStatusFilter = {},
-            onAddClick     = {},
-            onEditClick    = {}
+            onAddClick = {},
+            onEditClick = {},
+            onApproveProject = {}
         )
     }
 }
@@ -899,8 +1029,9 @@ private fun ProjectsLiderancaPreview() {
                 userRole = UserRole.ADMIN
             ),
             onStatusFilter = {},
-            onAddClick     = {},
-            onEditClick    = {}
+            onAddClick = {},
+            onEditClick = {},
+            onApproveProject = {}
         )
     }
 }
@@ -915,8 +1046,9 @@ private fun ProjectsOperadorPreview() {
                 userRole = UserRole.COLLABORATOR
             ),
             onStatusFilter = {},
-            onAddClick     = {},
-            onEditClick    = {}
+            onAddClick = {},
+            onEditClick = {},
+            onApproveProject = {}
         )
     }
 }
@@ -927,28 +1059,28 @@ private fun ProjectFormPreview() {
     GabInovaTheme {
         ProjectFormSheet(
             state = ProjectsUiState(
-                formTitle       = "Sistema de Monitoramento de Frota",
-                formIdeaOrigin  = "Sistema de monitoramento de frota em tempo real",
+                formTitle = "Sistema de Monitoramento de Frota",
+                formIdeaOrigin = "Sistema de monitoramento de frota em tempo real",
                 formResponsible = "Gestor Regional",
-                formStatus      = ProjectStatus.IN_PROGRESS,
-                formStage       = "Desenvolvimento",
-                formProgress    = 65f,
-                formInvestment  = "R$ 120.000",
-                formDeadline    = "30/09/2025"
+                formStatus = ProjectStatus.AWAITING_APPROVAL,
+                formStage = "Validação Estratégica",
+                formProgress = 65f,
+                formInvestment = "R$ 120.000",
+                formDeadline = "30/09/2026"
             ),
-            onTitleChange          = {},
-            onIdeaOriginChange     = {},
-            onResponsibleChange    = {},
-            onStatusChange         = {},
-            onStageChange          = {},
-            onInvestmentChange     = {},
+            onTitleChange = {},
+            onIdeaOriginChange = {},
+            onResponsibleChange = {},
+            onStatusChange = {},
+            onStageChange = {},
+            onInvestmentChange = {},
             onExpectedReturnChange = {},
-            onActualReturnChange   = {},
-            onProductivityChange   = {},
-            onProgressChange       = {},
-            onDeadlineChange       = {},
-            onSave                 = {},
-            onCancel               = {}
+            onActualReturnChange = {},
+            onProductivityChange = {},
+            onProgressChange = {},
+            onDeadlineChange = {},
+            onSave = {},
+            onCancel = {}
         )
     }
 }
