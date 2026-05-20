@@ -23,6 +23,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -42,6 +43,8 @@ import br.com.fiap.gabinova.ui.theme.GabSurface
 import br.com.fiap.gabinova.ui.theme.GabSurfaceVariant
 import br.com.fiap.gabinova.ui.theme.GabTextDark
 import br.com.fiap.gabinova.ui.theme.GabYellow
+import androidx.compose.foundation.shape.RoundedCornerShape
+import br.com.fiap.gabinova.ui.theme.GabGreen
 
 @Composable
 fun GabCard(
@@ -115,36 +118,81 @@ fun ProgressCard(
     modifier: Modifier = Modifier,
     description: String = ""
 ) {
-    val progress = if (total > 0) current.toFloat() / total.toFloat() else 0f
+    val progress = if (total > 0) {
+        (current.toFloat() / total.toFloat()).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+
+    val percent = (progress * 100).toInt()
+    val remaining = (total - current).coerceAtLeast(0)
 
     GabCard(modifier = modifier) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = GabTextDark
-        )
-        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = GabTextDark
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = description.ifBlank {
+                        if (remaining > 0) {
+                            "Faltam $remaining para atingir a meta"
+                        } else {
+                            "Meta atingida"
+                        }
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = GabOnSurfaceVariant
+                )
+            }
+
+            Text(
+                text = "$percent%",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = GabBlue
+            )
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
         LinearProgressIndicator(
             progress = { progress },
-            modifier = Modifier.fillMaxWidth(),
-            color = GabBlue,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+                .clip(CircleShape),
+            color = if (progress >= 1f) GabGreen else GabBlue,
             trackColor = GabSurfaceVariant
         )
-        Spacer(modifier = Modifier.height(6.dp))
+
+        Spacer(modifier = Modifier.height(10.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = description.ifBlank { "${(progress * 100).toInt()}% concluído" },
-                style = MaterialTheme.typography.bodySmall,
+                text = "Atual: $current",
+                style = MaterialTheme.typography.labelMedium,
                 color = GabOnSurfaceVariant
             )
+
             Text(
-                text = "$current / $total",
+                text = "Meta: $total",
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 color = GabBlue
             )
         }
@@ -159,49 +207,127 @@ fun BadgeCard(
     modifier: Modifier = Modifier,
     earned: Boolean = false
 ) {
-    val badgeBg    = if (earned) GabYellow else GabSurfaceVariant
-    val iconTint   = if (earned) GabTextDark else GabOnSurfaceVariant
-    val titleColor = if (earned) GabTextDark else GabOnSurfaceVariant
+
+    val containerColor =
+        if (earned) Color(0xFFFFF8E1)
+        else GabSurface
+
+    val borderColor =
+        if (earned) GabYellow
+        else Color.LightGray.copy(alpha = 0.3f)
+
+    val iconBg =
+        if (earned) GabYellow
+        else GabSurfaceVariant
+
+    val iconTint =
+        if (earned) GabTextDark
+        else GabOnSurfaceVariant
+
+    val titleColor =
+        if (earned) GabTextDark
+        else GabOnSurfaceVariant
 
     Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = GabSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = MaterialTheme.shapes.medium
+        modifier = modifier.fillMaxWidth(),
+
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor
+        ),
+
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = androidx.compose.ui.graphics.SolidColor(borderColor)
+        ),
+
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (earned) 6.dp else 1.dp
+        ),
+
+        shape = RoundedCornerShape(20.dp)
     ) {
-        Column(
+
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+
+            verticalAlignment = Alignment.CenterVertically
         ) {
+
             Box(
                 contentAlignment = Alignment.Center,
+
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(70.dp)
                     .clip(CircleShape)
-                    .background(badgeBg)
+                    .background(iconBg)
             ) {
+
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
                     tint = iconTint,
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier.size(36.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = titleColor
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = GabOnSurfaceVariant
-            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = titleColor
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = GabOnSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(50),
+
+                    color =
+                        if (earned)
+                            GabGreen.copy(alpha = 0.15f)
+                        else
+                            Color.Gray.copy(alpha = 0.15f)
+                ) {
+
+                    Text(
+                        text =
+                            if (earned)
+                                "✓ Desbloqueado"
+                            else
+                                "🔒 Em progresso",
+
+                        modifier = Modifier.padding(
+                            horizontal = 12.dp,
+                            vertical = 6.dp
+                        ),
+
+                        style = MaterialTheme.typography.labelMedium,
+
+                        color =
+                            if (earned)
+                                GabGreen
+                            else
+                                Color.Gray,
+
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
     }
 }
