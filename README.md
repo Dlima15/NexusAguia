@@ -5,7 +5,6 @@
 
 ---
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Android](https://img.shields.io/badge/Android-14+-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Latest-4285F4?style=for-the-badge&logo=jetpack&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![FIAP](https://img.shields.io/badge/FIAP%20Challenge-Partner-blue?style=for-the-badge&logoColor=white)](#sobre-o-projeto)
@@ -22,6 +21,8 @@ O **Nexus Águia** é uma plataforma corporativa de gestão da inovação desenv
 
 A solução conecta **estratégia, ideias, projetos e resultados**, permitindo que colaboradores participem ativamente do ecossistema de inovação da empresa de forma organizada, segura e alinhada aos objetivos estratégicos do negócio.
 
+O sistema foi desenvolvido com foco em **inovação organizacional**, **engajamento corporativo** e **geração de valor real** para a empresa, transformando uma simples coleta de ideias em um ecossistema completo de gestão de inovação.
+
 ### 🎯 Objetivo Principal
 
 Transformar ideias operacionais em projetos estratégicos capazes de gerar:
@@ -30,6 +31,15 @@ Transformar ideias operacionais em projetos estratégicos capazes de gerar:
 - ⚡ **Eficiência** de processos
 - 🚀 **Inovação** organizacional
 - 👥 **Engajamento** corporativo
+
+### 💡 Por que Nexus Águia?
+
+O **Nexus Águia** é mais que um software — é um **catalisador de mudança organizacional**:
+
+- **Nexus**: Conexão entre todos os elementos da inovação
+- **Águia**: Visão estratégica, agilidade e força do Grupo Águia Branca
+
+Fortalece a cultura de inovação dentro da empresa, conectando todos os níveis organizacionais em um único ecossistema colaborativo.
 
 ---
 
@@ -90,14 +100,6 @@ Ao contrário de simples aplicativos de cadastro de ideias, o Nexus Águia ofere
 ---
 
 ## 🛠️ Stack Tecnológica
-
-<div align="center">
-
-![Kotlin](https://skillicons.dev/icons?i=kotlin)
-![Gradle](https://skillicons.dev/icons?i=gradle)
-![Android](https://skillicons.dev/icons?i=android)
-
-</div>
 
 | Tecnologia | Descrição |
 |---|---|
@@ -295,6 +297,32 @@ RESULTADOS (Indicadores e ROI)
 ```
 
 Permitindo transformar inovação em **valor real** para o negócio.
+
+---
+
+## 📦 Releases
+
+Todas as versões do Nexus Águia estão disponíveis no repositório. Consulte a página de [Releases](https://github.com/Dlima15/NexusAguia/releases) para:
+
+- 📥 Baixar versões específicas
+- 📝 Consultar notas de mudança
+- 🐛 Ver correções de bugs implementadas
+- ✨ Acompanhar novas funcionalidades
+
+---
+
+## 📦 Packages
+
+O projeto utiliza as seguintes dependências principais gerenciadas pelo Gradle:
+
+- **Jetpack Compose** - Framework UI declarativo
+- **Retrofit 2** - Cliente HTTP
+- **Gson** - Serialização JSON
+- **AndroidX DataStore** - Persistência de dados
+- **Kotlin Coroutines** - Programação reativa assíncrona
+- **Material Design 3** - Componentes de design
+
+Para mais detalhes sobre as dependências, consulte o arquivo `build.gradle.kts`.
 
 ---
 
