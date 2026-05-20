@@ -15,10 +15,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -62,8 +62,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
 private fun currentPeriod(): String {
     val sdf = SimpleDateFormat("MMMM yyyy", Locale("pt", "BR"))
     return sdf.format(Date()).replaceFirstChar { it.uppercase() }
@@ -71,14 +69,14 @@ private fun currentPeriod(): String {
 
 private fun roiColor(roi: Double) = when {
     roi >= 100.0 -> GabGreen
-    roi >= 50.0  -> GabYellow
-    else         -> GabError
+    roi >= 50.0 -> GabYellow
+    else -> GabError
 }
 
 private fun roiLabel(roi: Double) = when {
     roi >= 100.0 -> "Excelente"
-    roi >= 50.0  -> "Atingido"
-    else         -> "Atenção"
+    roi >= 50.0 -> "Atingido"
+    else -> "Atenção"
 }
 
 private fun roiTextColor(roi: Double) = if (roi in 50.0..99.9) GabTextDark else Color.White
@@ -86,10 +84,8 @@ private fun roiTextColor(roi: Double) = if (roi in 50.0..99.9) GabTextDark else 
 private fun engagementColor(rate: Double) = when {
     rate >= 60.0 -> GabGreen
     rate >= 40.0 -> GabYellow
-    else         -> GabError
+    else -> GabError
 }
-
-// ── Screen ─────────────────────────────────────────────────────────────────────
 
 @Composable
 fun DashboardScreen() {
@@ -98,12 +94,19 @@ fun DashboardScreen() {
 
     when {
         vm.state.isLoading -> Box(
-            modifier            = Modifier.fillMaxSize().background(GabBackground),
-            contentAlignment    = Alignment.Center
-        ) { CircularProgressIndicator(color = GabBlue) }
+            modifier = Modifier
+                .fillMaxSize()
+                .background(GabBackground),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = GabBlue)
+        }
 
         vm.state.error != null -> Box(
-            modifier         = Modifier.fillMaxSize().background(GabBackground).padding(24.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(GabBackground)
+                .padding(24.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -111,16 +114,16 @@ fun DashboardScreen() {
                 Spacer(Modifier.height(16.dp))
                 Button(
                     onClick = vm::retry,
-                    colors  = ButtonDefaults.buttonColors(containerColor = GabBlue)
-                ) { Text("Tentar novamente", color = Color.White) }
+                    colors = ButtonDefaults.buttonColors(containerColor = GabBlue)
+                ) {
+                    Text("Tentar novamente", color = Color.White)
+                }
             }
         }
 
         else -> DashboardContent(state = vm.state)
     }
 }
-
-// ── Content ────────────────────────────────────────────────────────────────────
 
 @Composable
 internal fun DashboardContent(state: DashboardUiState) {
@@ -137,22 +140,18 @@ internal fun DashboardContent(state: DashboardUiState) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
         ) {
-            // Quick overview tiles
             QuickStatsGrid(data = data)
 
-            // ── Ideias ─────────────────────────────────────────────────────
             Spacer(modifier = Modifier.height(24.dp))
             SectionTitle(title = "Ideias & Inovação")
             Spacer(modifier = Modifier.height(10.dp))
             IdeaInsightsCard(data = data)
 
-            // ── Projetos ───────────────────────────────────────────────────
             Spacer(modifier = Modifier.height(24.dp))
-            SectionTitle(title = "Projetos")
+            SectionTitle(title = "Projetos Estratégicos")
             Spacer(modifier = Modifier.height(10.dp))
             ProjectsOverviewSection(data = data)
 
-            // ── Financeiro (Liderança only) ────────────────────────────────
             if (state.isLeadership) {
                 Spacer(modifier = Modifier.height(24.dp))
                 SectionTitle(title = "Resultados Financeiros")
@@ -160,9 +159,8 @@ internal fun DashboardContent(state: DashboardUiState) {
                 FinancialSection(data = data)
             }
 
-            // ── Engajamento ────────────────────────────────────────────────
             Spacer(modifier = Modifier.height(24.dp))
-            SectionTitle(title = "Engajamento")
+            SectionTitle(title = "Engajamento Nexus")
             Spacer(modifier = Modifier.height(10.dp))
             EngagementSection(data = data, showDetails = state.isLeadership)
 
@@ -171,13 +169,14 @@ internal fun DashboardContent(state: DashboardUiState) {
     }
 }
 
-// ── Executive header ───────────────────────────────────────────────────────────
-
 @Composable
 private fun ExecutiveHeader(data: DashboardData, userRole: UserRole) {
     val isLeadership = userRole == UserRole.ADMIN || userRole == UserRole.ANALYST
-    val title        = if (isLeadership) "Painel Executivo" else "Resumo Operacional"
-    val subtitle     = if (isLeadership) "Visão estratégica consolidada" else "Indicadores do período"
+    val title = if (isLeadership) "Painel Executivo" else "Resumo Operacional"
+    val subtitle = if (isLeadership)
+        "Monitoramento estratégico de inovação, produtividade e resultados."
+    else
+        "Indicadores operacionais do período."
 
     Box(
         modifier = Modifier
@@ -187,72 +186,112 @@ private fun ExecutiveHeader(data: DashboardData, userRole: UserRole) {
     ) {
         Column {
             Row(
-                modifier              = Modifier.fillMaxWidth(),
-                verticalAlignment     = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text       = title,
-                    style      = MaterialTheme.typography.headlineSmall,
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold,
-                    color      = GabOnPrimary
+                    color = GabOnPrimary
                 )
+
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier         = Modifier
+                    modifier = Modifier
                         .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(50))
                         .padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text  = currentPeriod(),
+                        text = currentPeriod(),
                         style = MaterialTheme.typography.labelMedium,
                         color = GabOnPrimary
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(4.dp))
+
             Text(
-                text  = "Nexus Águia · Grupo Águia Branca",
+                text = "Plataforma Nexus · Grupo Águia Branca",
                 style = MaterialTheme.typography.bodySmall,
                 color = GabOnPrimary.copy(alpha = 0.75f)
             )
+
             Spacer(modifier = Modifier.height(2.dp))
+
             Text(
-                text  = subtitle,
+                text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = GabOnPrimary.copy(alpha = 0.55f)
+                color = GabOnPrimary.copy(alpha = 0.65f)
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ExecutiveBadge(
+                    value = data.financialReturn,
+                    label = "retorno estratégico"
+                )
+
+                ExecutiveBadge(
+                    value = data.productivityGain,
+                    label = "produtividade"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExecutiveBadge(value: String, label: String) {
+    Box(
+        modifier = Modifier
+            .background(Color.White.copy(alpha = 0.14f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp)
+    ) {
+        Column {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = GabOnPrimary
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = GabOnPrimary.copy(alpha = 0.75f)
             )
         }
     }
 }
 
-// ── Quick stats grid (4 tiles) ─────────────────────────────────────────────────
-
 @Composable
 private fun QuickStatsGrid(data: DashboardData) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         QuickTile(
-            value    = "${data.totalIdeas}",
-            label    = "Ideias",
-            color    = GabBlue,
+            value = "${data.totalIdeas}",
+            label = "Ideias",
+            color = GabBlue,
             modifier = Modifier.weight(1f)
         )
         QuickTile(
-            value    = "${data.approvedIdeas}",
-            label    = "Aprovadas",
-            color    = GabGreen,
+            value = "${data.approvedIdeas}",
+            label = "Aprovadas",
+            color = GabGreen,
             modifier = Modifier.weight(1f)
         )
         QuickTile(
-            value    = "${data.activeProjects}",
-            label    = "Ativos",
-            color    = Color(0xFFFF9800),
+            value = "${data.activeProjects}",
+            label = "Ativos",
+            color = Color(0xFFFF9800),
             modifier = Modifier.weight(1f)
         )
         QuickTile(
-            value    = "${data.completedProjects}",
-            label    = "Concluídos",
-            color    = GabLightBlue,
+            value = data.productivityGain,
+            label = "Impacto Real",
+            color = GabLightBlue,
             modifier = Modifier.weight(1f)
         )
     }
@@ -261,10 +300,10 @@ private fun QuickStatsGrid(data: DashboardData) {
 @Composable
 private fun QuickTile(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
     Card(
-        modifier  = modifier,
-        colors    = CardDefaults.cardColors(containerColor = GabSurface),
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = GabSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape     = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.medium
     ) {
         Box(
             modifier = Modifier
@@ -272,44 +311,50 @@ private fun QuickTile(value: String, label: String, color: Color, modifier: Modi
                 .height(3.dp)
                 .background(color)
         )
+
         Column(
-            modifier            = Modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text       = value,
-                style      = MaterialTheme.typography.titleLarge,
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color      = color,
-                textAlign  = TextAlign.Center
+                color = color,
+                textAlign = TextAlign.Center
             )
+
             Text(
-                text      = label,
-                style     = MaterialTheme.typography.labelSmall,
-                color     = GabOnSurfaceVariant,
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = GabOnSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }
     }
 }
 
-// ── Idea insights card ─────────────────────────────────────────────────────────
-
 @Composable
 private fun IdeaInsightsCard(data: DashboardData) {
     Card(
-        modifier  = Modifier.fillMaxWidth(),
-        colors    = CardDefaults.cardColors(containerColor = GabSurface),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = GabSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape     = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Ideias alinhadas às diretrizes estratégicas da companhia.",
+                style = MaterialTheme.typography.bodySmall,
+                color = GabOnSurfaceVariant
+            )
 
-            // Approval rate
+            Spacer(modifier = Modifier.height(14.dp))
+
             MetricProgressRow(
-                label    = "Taxa de Aprovação",
+                label = "Taxa de Aprovação",
                 valueStr = "${String.format("%.1f", data.approvalRate)}%",
                 progress = (data.approvalRate / 100.0).toFloat().coerceIn(0f, 1f),
                 barColor = GabGreen
@@ -319,9 +364,8 @@ private fun IdeaInsightsCard(data: DashboardData) {
             HorizontalDivider()
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Mini metric row
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 MiniMetric(
@@ -348,22 +392,21 @@ private fun IdeaInsightsCard(data: DashboardData) {
     }
 }
 
-// ── Projects overview section ──────────────────────────────────────────────────
-
 @Composable
 private fun ProjectsOverviewSection(data: DashboardData) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatCard(
-            value    = "${data.activeProjects}",
-            label    = "Em Andamento",
-            icon     = Icons.AutoMirrored.Filled.TrendingUp,
+            value = "${data.activeProjects}",
+            label = "Em Execução",
+            icon = Icons.AutoMirrored.Filled.TrendingUp,
             iconTint = Color(0xFFFF9800),
             modifier = Modifier.weight(1f)
         )
+
         StatCard(
-            value    = "${data.completedProjects}",
-            label    = "Concluídos",
-            icon     = Icons.Filled.CheckCircle,
+            value = "${data.completedProjects}",
+            label = "Impacto Medido",
+            icon = Icons.Filled.CheckCircle,
             iconTint = GabGreen,
             modifier = Modifier.weight(1f)
         )
@@ -372,21 +415,31 @@ private fun ProjectsOverviewSection(data: DashboardData) {
     Spacer(modifier = Modifier.height(8.dp))
 
     Card(
-        modifier  = Modifier.fillMaxWidth(),
-        colors    = CardDefaults.cardColors(containerColor = GabSurface),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = GabSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape     = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Projetos originados de ideias priorizadas, acompanhados até a geração de resultado mensurável.",
+                style = MaterialTheme.typography.bodySmall,
+                color = GabOnSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             MetricProgressRow(
-                label    = "Taxa de Conclusão",
+                label = "Taxa de Conclusão",
                 valueStr = "${String.format("%.0f", data.completionRate)}%",
                 progress = (data.completionRate / 100.0).toFloat().coerceIn(0f, 1f),
                 barColor = GabBlue
             )
+
             Spacer(modifier = Modifier.height(6.dp))
+
             Text(
-                text  = "${data.completedProjects} de ${data.totalProjects} projetos concluídos",
+                text = "${data.completedProjects} de ${data.totalProjects} projetos concluídos",
                 style = MaterialTheme.typography.bodySmall,
                 color = GabOnSurfaceVariant
             )
@@ -394,70 +447,98 @@ private fun ProjectsOverviewSection(data: DashboardData) {
     }
 }
 
-// ── Financial section (Liderança only) ────────────────────────────────────────
-
 @Composable
 private fun FinancialSection(data: DashboardData) {
-    // Investment + Return
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = GabSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Text(
+            text = "Resultados acompanhados em retorno financeiro, economia operacional e produtividade.",
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = GabOnSurfaceVariant
+        )
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         KpiCard(
-            label    = "Investimento Total",
-            value    = data.totalInvestment,
-            caption  = "Recursos alocados",
-            color    = GabBlue,
+            label = "Investimento Total",
+            value = data.totalInvestment,
+            caption = "Recursos alocados",
+            color = GabBlue,
             modifier = Modifier.weight(1f)
         )
+
         KpiCard(
-            label    = "Retorno Financeiro",
-            value    = data.financialReturn,
-            caption  = "Resultado gerado",
-            color    = GabGreen,
+            label = "Retorno Financeiro",
+            value = data.financialReturn,
+            caption = "Resultado gerado",
+            color = GabGreen,
             modifier = Modifier.weight(1f)
         )
     }
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    // ROI — prominent full-width card
     RoiCard(roi = data.roi)
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    // Economy + Productivity
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         KpiCard(
-            label    = "Economia Gerada",
-            value    = data.economyGenerated,
-            caption  = "Custos evitados",
-            color    = GabLightBlue,
+            label = "Economia Gerada",
+            value = data.economyGenerated,
+            caption = "Custos evitados",
+            color = GabLightBlue,
             modifier = Modifier.weight(1f)
         )
+
         KpiCard(
-            label    = "Ganho Produtividade",
-            value    = data.productivityGain,
-            caption  = "Média dos projetos",
-            color    = GabGreen,
+            label = "Ganho Produtividade",
+            value = data.productivityGain,
+            caption = "Média dos projetos",
+            color = GabGreen,
             modifier = Modifier.weight(1f)
         )
     }
 }
 
-// ── Engagement section ─────────────────────────────────────────────────────────
-
 @Composable
 private fun EngagementSection(data: DashboardData, showDetails: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = GabSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Text(
+            text = "Participação ativa dos colaboradores no Programa Nexus de Inovação.",
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = GabOnSurfaceVariant
+        )
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatCard(
-            value    = "${data.engagedCollaborators}",
-            label    = "Engajados",
-            icon     = Icons.Filled.Groups,
+            value = "${data.engagedCollaborators}",
+            label = "Engajados",
+            icon = Icons.Filled.Groups,
             iconTint = GabBlue,
             modifier = Modifier.weight(1f)
         )
+
         StatCard(
-            value    = "${data.totalCollaborators - data.engagedCollaborators}",
-            label    = "Sem Registro",
-            icon     = Icons.Filled.Work,
+            value = "${data.totalCollaborators - data.engagedCollaborators}",
+            label = "Sem Registro",
+            icon = Icons.Filled.Work,
             iconTint = GabOnSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
@@ -466,16 +547,14 @@ private fun EngagementSection(data: DashboardData, showDetails: Boolean) {
     Spacer(modifier = Modifier.height(8.dp))
 
     Card(
-        modifier  = Modifier.fillMaxWidth(),
-        colors    = CardDefaults.cardColors(containerColor = GabSurface),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = GabSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape     = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-
-            // Collaborator progress bar
             MetricProgressRow(
-                label    = "Colaboradores Engajados",
+                label = "Colaboradores Engajados",
                 valueStr = "${data.engagedCollaborators} / ${data.totalCollaborators}",
                 progress = data.engagementFraction,
                 barColor = engagementColor(data.engagementRate)
@@ -487,15 +566,14 @@ private fun EngagementSection(data: DashboardData, showDetails: Boolean) {
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Row(
-                    modifier              = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment     = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Engagement rate badge
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             contentAlignment = Alignment.Center,
-                            modifier         = Modifier
+                            modifier = Modifier
                                 .background(
                                     engagementColor(data.engagementRate),
                                     RoundedCornerShape(8.dp)
@@ -503,15 +581,17 @@ private fun EngagementSection(data: DashboardData, showDetails: Boolean) {
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                text       = "${String.format("%.1f", data.engagementRate)}%",
-                                style      = MaterialTheme.typography.titleMedium,
+                                text = "${String.format("%.1f", data.engagementRate)}%",
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.ExtraBold,
-                                color      = Color.White
+                                color = Color.White
                             )
                         }
+
                         Spacer(modifier = Modifier.height(4.dp))
+
                         Text(
-                            text  = "Taxa de Engajamento",
+                            text = "Taxa de Engajamento",
                             style = MaterialTheme.typography.labelSmall,
                             color = GabOnSurfaceVariant
                         )
@@ -519,40 +599,42 @@ private fun EngagementSection(data: DashboardData, showDetails: Boolean) {
 
                     ColumnDivider()
 
-                    // Top guideline
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text       = data.topGuideline,
-                            style      = MaterialTheme.typography.labelLarge,
+                            text = data.topGuideline,
+                            style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color      = GabBlue,
-                            textAlign  = TextAlign.Center
+                            color = GabBlue,
+                            textAlign = TextAlign.Center
                         )
+
                         Spacer(modifier = Modifier.height(4.dp))
+
                         Text(
-                            text      = "Diretriz Principal",
-                            style     = MaterialTheme.typography.labelSmall,
-                            color     = GabOnSurfaceVariant,
+                            text = "Diretriz Principal",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = GabOnSurfaceVariant,
                             textAlign = TextAlign.Center
                         )
                     }
                 }
             } else {
-                // Gestor — simplified rate
                 Spacer(modifier = Modifier.height(10.dp))
+
                 Row(
-                    modifier          = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text  = "Taxa de Engajamento",
+                        text = "Taxa de Engajamento",
                         style = MaterialTheme.typography.bodySmall,
                         color = GabOnSurfaceVariant
                     )
+
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier         = Modifier
+                        modifier = Modifier
                             .background(
                                 engagementColor(data.engagementRate),
                                 RoundedCornerShape(50)
@@ -560,10 +642,10 @@ private fun EngagementSection(data: DashboardData, showDetails: Boolean) {
                             .padding(horizontal = 10.dp, vertical = 3.dp)
                     ) {
                         Text(
-                            text       = "${String.format("%.1f", data.engagementRate)}%",
-                            style      = MaterialTheme.typography.labelMedium,
+                            text = "${String.format("%.1f", data.engagementRate)}%",
+                            style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color      = Color.White
+                            color = Color.White
                         )
                     }
                 }
@@ -572,20 +654,18 @@ private fun EngagementSection(data: DashboardData, showDetails: Boolean) {
     }
 }
 
-// ── ROI card ───────────────────────────────────────────────────────────────────
-
 @Composable
 private fun RoiCard(roi: Double) {
-    val color    = roiColor(roi)
-    val label    = roiLabel(roi)
+    val color = roiColor(roi)
+    val label = roiLabel(roi)
     val txtColor = roiTextColor(roi)
     val progress = (roi / 200.0).toFloat().coerceIn(0f, 1f)
 
     Card(
-        modifier  = Modifier.fillMaxWidth(),
-        colors    = CardDefaults.cardColors(containerColor = GabSurface),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = GabSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-        shape     = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.medium
     ) {
         Box(
             modifier = Modifier
@@ -593,43 +673,57 @@ private fun RoiCard(roi: Double) {
                 .height(4.dp)
                 .background(color)
         )
+
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text  = "Retorno sobre Investimento (ROI)",
+                text = "Retorno sobre Investimento (ROI)",
                 style = MaterialTheme.typography.labelSmall,
                 color = GabOnSurfaceVariant
             )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Indicador consolidado dos projetos estratégicos implementados.",
+                style = MaterialTheme.typography.bodySmall,
+                color = GabOnSurfaceVariant
+            )
+
             Spacer(modifier = Modifier.height(10.dp))
 
             Row(
-                modifier          = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text       = "${String.format("%.1f", roi)}%",
-                    style      = MaterialTheme.typography.displaySmall,
+                    text = "${String.format("%.1f", roi)}%",
+                    style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.ExtraBold,
-                    color      = color
+                    color = color
                 )
+
                 Spacer(modifier = Modifier.weight(1f))
+
                 Column(horizontalAlignment = Alignment.End) {
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier         = Modifier
+                        modifier = Modifier
                             .background(color, RoundedCornerShape(8.dp))
                             .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Text(
-                            text       = label,
-                            style      = MaterialTheme.typography.labelLarge,
+                            text = label,
+                            style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color      = txtColor
+                            color = txtColor
                         )
                     }
+
                     if (roi >= 100.0) {
                         Spacer(modifier = Modifier.height(4.dp))
+
                         Text(
-                            text  = "+${String.format("%.1f", roi - 100.0)}% acima da meta",
+                            text = "+${String.format("%.1f", roi - 100.0)}% acima da meta",
                             style = MaterialTheme.typography.labelSmall,
                             color = GabGreen
                         )
@@ -640,25 +734,25 @@ private fun RoiCard(roi: Double) {
             Spacer(modifier = Modifier.height(14.dp))
 
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("0%", style = MaterialTheme.typography.labelSmall, color = GabOnSurfaceVariant)
                 Text("Meta 100%", style = MaterialTheme.typography.labelSmall, color = GabOnSurfaceVariant)
                 Text("200%", style = MaterialTheme.typography.labelSmall, color = GabOnSurfaceVariant)
             }
+
             Spacer(modifier = Modifier.height(4.dp))
+
             LinearProgressIndicator(
-                progress   = { progress },
-                modifier   = Modifier.fillMaxWidth(),
-                color      = color,
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth(),
+                color = color,
                 trackColor = GabSurfaceVariant
             )
         }
     }
 }
-
-// ── KPI card ───────────────────────────────────────────────────────────────────
 
 @Composable
 private fun KpiCard(
@@ -669,10 +763,10 @@ private fun KpiCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier  = modifier,
-        colors    = CardDefaults.cardColors(containerColor = GabSurface),
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = GabSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape     = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.medium
     ) {
         Box(
             modifier = Modifier
@@ -680,30 +774,33 @@ private fun KpiCard(
                 .height(3.dp)
                 .background(color)
         )
+
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
-                text  = label,
+                text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = GabOnSurfaceVariant
             )
+
             Spacer(modifier = Modifier.height(6.dp))
+
             Text(
-                text       = value,
-                style      = MaterialTheme.typography.titleMedium,
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
-                color      = color
+                color = color
             )
+
             Spacer(modifier = Modifier.height(2.dp))
+
             Text(
-                text  = caption,
+                text = caption,
                 style = MaterialTheme.typography.labelSmall,
                 color = GabOnSurfaceVariant
             )
         }
     }
 }
-
-// ── Shared micro-composables ───────────────────────────────────────────────────
 
 @Composable
 private fun MetricProgressRow(
@@ -713,28 +810,31 @@ private fun MetricProgressRow(
     barColor: Color
 ) {
     Row(
-        modifier              = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment     = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text       = label,
-            style      = MaterialTheme.typography.labelMedium,
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
-            color      = GabTextDark
+            color = GabTextDark
         )
+
         Text(
-            text       = valueStr,
-            style      = MaterialTheme.typography.labelMedium,
+            text = valueStr,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
-            color      = barColor
+            color = barColor
         )
     }
+
     Spacer(modifier = Modifier.height(6.dp))
+
     LinearProgressIndicator(
-        progress   = { progress },
-        modifier   = Modifier.fillMaxWidth(),
-        color      = barColor,
+        progress = { progress },
+        modifier = Modifier.fillMaxWidth(),
+        color = barColor,
         trackColor = GabSurfaceVariant
     )
 }
@@ -743,15 +843,16 @@ private fun MetricProgressRow(
 private fun MiniMetric(value: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text       = value,
-            style      = MaterialTheme.typography.titleMedium,
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.ExtraBold,
-            color      = GabBlue
+            color = GabBlue
         )
+
         Text(
-            text      = label,
-            style     = MaterialTheme.typography.labelSmall,
-            color     = GabOnSurfaceVariant,
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = GabOnSurfaceVariant,
             textAlign = TextAlign.Center
         )
     }
@@ -766,8 +867,6 @@ private fun ColumnDivider() {
             .background(GabSurfaceVariant)
     )
 }
-
-// ── Previews ───────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true, showSystemUi = true, name = "Dashboard — Liderança")
 @Composable
@@ -794,7 +893,7 @@ private fun DashboardGestorPreview() {
 private fun RoiCardPreview() {
     GabInovaTheme {
         Column(
-            modifier  = Modifier
+            modifier = Modifier
                 .background(GabBackground)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -811,17 +910,18 @@ private fun RoiCardPreview() {
 private fun KpiCardsPreview() {
     GabInovaTheme {
         Column(
-            modifier  = Modifier
+            modifier = Modifier
                 .background(GabBackground)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                KpiCard("Investimento Total", "R\$ 345.000", "Recursos alocados", GabBlue, Modifier.weight(1f))
-                KpiCard("Retorno Financeiro", "R\$ 728.000", "Resultado gerado", GabGreen, Modifier.weight(1f))
+                KpiCard("Investimento Total", "R$ 345.000", "Recursos alocados", GabBlue, Modifier.weight(1f))
+                KpiCard("Retorno Financeiro", "R$ 728.000", "Resultado gerado", GabGreen, Modifier.weight(1f))
             }
+
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                KpiCard("Economia Gerada", "R\$ 92.000", "Custos evitados", GabLightBlue, Modifier.weight(1f))
+                KpiCard("Economia Gerada", "R$ 92.000", "Custos evitados", GabLightBlue, Modifier.weight(1f))
                 KpiCard("Ganho Produtividade", "18%", "Média dos projetos", GabGreen, Modifier.weight(1f))
             }
         }
