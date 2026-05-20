@@ -5,6 +5,7 @@
 
 ---
 
+[![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Android](https://img.shields.io/badge/Android-14+-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://www.android.com/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Latest-4285F4?style=for-the-badge&logo=jetpack&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![FIAP](https://img.shields.io/badge/FIAP%20Challenge-Partner-blue?style=for-the-badge&logoColor=white)](#sobre-o-projeto)
@@ -100,6 +101,14 @@ Ao contrário de simples aplicativos de cadastro de ideias, o Nexus Águia ofere
 ---
 
 ## 🛠️ Stack Tecnológica
+
+<div align="center">
+
+![Kotlin](https://skillicons.dev/icons?i=kotlin)
+![Gradle](https://skillicons.dev/icons?i=gradle)
+![Android](https://skillicons.dev/icons?i=android)
+
+</div>
 
 | Tecnologia | Descrição |
 |---|---|
