@@ -2,7 +2,8 @@ package br.com.fiap.gabinova.model
 
 import com.google.gson.annotations.SerializedName
 
-enum class IdeaStatus {
+enum class
+IdeaStatus {
     @SerializedName("PENDING")      PENDING,
     @SerializedName("IN_REVIEW")    IN_REVIEW,
     @SerializedName("APPROVED")     APPROVED,
